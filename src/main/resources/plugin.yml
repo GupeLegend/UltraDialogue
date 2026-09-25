@@ -1,0 +1,35 @@
+name: UltraDialogue
+version: '1.0'
+main: mc.gupe.ultradialogue.UltraDialogue
+api-version: '26.1.2'
+author: Social Studio
+description: NPC dialogue screens with branching answers, conditions and actions - native Minecraft dialogs, no resource pack.
+website: https://modrinth.com/plugin/ultradialogue
+folia-supported: false
+# Todos OPCIONALES. En softdepend para que carguen antes y el puente los encuentre.
+#   FancyNpcs      -> el click en un NPC abre su dialogo
+#   PlaceholderAPI -> %placeholders% en textos, acciones y condiciones
+#   DeluxeMenus    -> la accion "menu:"
+#   ViaVersion     -> los clientes < 1.21.6 reciben el dialogo en el chat
+softdepend: [FancyNpcs, PlaceholderAPI, DeluxeMenus, ViaVersion]
+
+commands:
+  ultradialogue:
+    description: Manage NPC dialogues.
+    aliases: [ud, dialogue, dialogo]
+    permission: ultradialogue.admin
+    usage: |
+      /ud open <id> [player] [node]
+      /ud reload
+      /ud list
+      /ud flags <player> [clear [flag]]
+
+permissions:
+  ultradialogue.admin:
+    description: Open, reload and manage dialogues.
+    default: op
+
+  # Nodo del nombre anterior (el plugin privado "Dialogos"), por compatibilidad.
+  dialogos.admin:
+    default: false
+    children: { ultradialogue.admin: true }

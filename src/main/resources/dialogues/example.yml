@@ -1,0 +1,82 @@
+# ==================================================================================
+#  TEMPLATE - copy it, rename it (the file name is the id) and edit it.
+#  Try it without an NPC:  /ud open example
+# ==================================================================================
+
+# Shown at the top of the screen. A node can change it with its own "speaker:".
+name: '&b&lThe Example'
+
+# FancyNpcs NPC names (the name used in /npc create, NOT the display name).
+# Clicking one of these opens this dialogue INSTEAD of its FancyNpcs actions.
+# Any other entity:  /tag @e[type=villager,limit=1,sort=nearest] add dialogue:example
+npcs: []
+
+# npc | player:Name | texture:<base64> | item:MATERIAL | none      ("|" = fallback)
+portrait: 'npc | item:WRITABLE_BOOK'
+
+# Sound every time it speaks (optional; otherwise talk-sound from config.yml).
+sound: 'entity.villager.ambient 0.6 1.2'
+
+# Buttons per row (optional; otherwise screen.columns from config.yml).
+columns: 1
+
+# Where the talk starts: the first rule that matches. A single "start: node" works too.
+start:
+  - if: '!flag:example_seen'
+    node: first_time
+  - node: menu
+
+nodes:
+
+  first_time:
+    # Actions that run as soon as the node is shown.
+    on-show:
+      - 'flag: example_seen'
+    text:
+      - 'Hello, &e%player%&f! This is the first time we talk.'
+      - 'Next time I will greet you differently.'
+    # No answers + "next" = a single "Continue" button.
+    next: menu
+
+  menu:
+    text: 'How can I help you?'
+    answers:
+      - text: '&aWhat can you do?'
+        tooltip: '&7Hover text.'
+        goto: explanation
+
+      - text: '&eRun /spawn'
+        actions:
+          - 'command: spawn'
+
+      # "if" hides the answer when it doesn't match. Every line = AND. "||" = OR.
+      - text: '&6VIP only'
+        if:
+          - 'permission:group.vip || permission:ultradialogue.admin'
+        actions:
+          - 'message: &6You are VIP!'
+          - 'sound: ENTITY_PLAYER_LEVELUP'
+
+      - text: '&dTalk to the merchant'
+        actions:
+          - 'dialogue: merchant'
+
+      - text: '&8Goodbye'
+        goto: end
+
+  explanation:
+    # Another character can take the word in a node.
+    speaker: '&7&oA distant voice'
+    text:
+      - 'Each answer can:'
+      - '&7• go to another node  • open a menu'
+      - '&7• run commands  • play sounds, titles, messages'
+      - '&7• flag the player and change what they hear next time'
+    answers:
+      - text: '&7« Back'
+        goto: menu
+      - text: '&cForget we ever talked'
+        actions:
+          - 'unflag: example_seen'
+          - 'actionbar: &7Flag removed.'
+        goto: end

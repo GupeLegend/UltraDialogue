@@ -1,0 +1,33 @@
+# UltraDialogue - main settings.
+# Dialogues live in the dialogues/ folder, one .yml per character. Reload: /ud reload
+
+# en | es
+language: en
+
+# dialog = the native dialog screen (Minecraft 1.21.6+)
+# chat   = text with clickable answers in chat
+# Clients older than 1.21.6 (joining through ViaVersion) always get the chat version.
+mode: dialog
+
+# legacy = &a &l &#ff8800   |   minimessage = <green> <bold> <#ff8800>
+format: legacy
+
+# Console command run by the "menu: <name>" action. The default opens a DeluxeMenus menu.
+menu-command: 'dm open {menu} {player}'
+
+screen:
+  text-width: 260
+  button-width: 220
+  columns: 1
+  close-with-esc: true
+  # Adds a "Goodbye" button under every screen, besides the answers.
+  exit-button: false
+
+# Only right click opens a dialogue. true = left click too.
+left-click: false
+# Milliseconds between two clicks on the same NPC.
+cooldown-ms: 700
+# If the player walks further than this from the NPC, the answers stop working.
+max-distance: 8.0
+# Played every time the NPC speaks (empty = none). Each dialogue can override it.
+talk-sound: 'entity.villager.ambient 0.6 1.1'

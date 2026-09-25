@@ -1,0 +1,32 @@
+name: '&2&lThe Wandering Merchant'
+npcs: [merchant]
+portrait: 'npc | item:EMERALD'
+sound: 'entity.wandering_trader.ambient 0.7 1'
+start:
+  - if: '!flag:met_merchant'
+    node: intro
+  - node: hello
+nodes:
+  intro:
+    on-show: ['flag: met_merchant']
+    text:
+      - 'Psst! You, the one with empty pockets. Come closer.'
+      - 'I carry things you won''t find anywhere else. But I never stay for long...'
+    next: hello
+  hello:
+    text: 'My stock changes every &fMonday&f. What you see today may be gone tomorrow.'
+    answers:
+      - text: '&2Show me your goods'
+        tooltip: '&7Opens the "shop" menu (DeluxeMenus).'
+        actions: ['menu: shop']
+      - text: '&7Where do you get all this?'
+        goto: secret
+      - text: '&8Not interested'
+        goto: end
+  secret:
+    text: 'A good merchant never reveals his suppliers. &7&o*smiles*'
+    answers:
+      - text: '&2Show me your goods'
+        actions: ['menu: shop']
+      - text: '&8Goodbye'
+        goto: end
