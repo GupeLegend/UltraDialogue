@@ -9,28 +9,40 @@ import java.util.List;
  *   permission:node     !permission:node      (tambien permiso:)
  *   flag:name           !flag:name            (tambien marca:)
  *   %placeholder% >= 10     ( ==  !=  >=  <=  >  <  contains )
+ *   affinity >= 20          con el personaje de este dialogo   (tambien afinidad)
+ *   affinity:kadir >= 20    con otro personaje
  */
 public final class Conditions {
 
     private static final String[] OPS = {">=", "<=", "!=", "==", ">", "<", " contains ", " contiene "};
+    private static final java.util.regex.Pattern AFFINITY =
+            java.util.regex.Pattern.compile("(?i)^(affinity|afinidad)(?::(\\S+))?\\s*(>=|<=|!=|==|>|<)\\s*(-?\\d+)$");
 
     private Conditions() {}
 
-    public static boolean test(Player p, List<String> lines) {
-        for (String l : lines) if (!line(p, l)) return false;
+    /** @param dialogueId el dialogo desde donde se pregunta (para "affinity" sin id). */
+    public static boolean test(Player p, List<String> lines, String dialogueId) {
+        for (String l : lines) if (!line(p, l, dialogueId)) return false;
         return true;
     }
 
-    private static boolean line(Player p, String l) {
-        for (String part : l.split("\\s*\\|\\|\\s*")) if (one(p, part.trim())) return true;
+    private static boolean line(Player p, String l, String dialogueId) {
+        for (String part : l.split("\\s*\\|\\|\\s*")) if (one(p, part.trim(), dialogueId)) return true;
         return false;
     }
 
-    private static boolean one(Player p, String c) {
+    private static boolean one(Player p, String c, String dialogueId) {
         if (c.isEmpty()) return true;
         boolean not = c.startsWith("!") && !c.startsWith("!=");
         String s = not ? c.substring(1).trim() : c;
         String low = s.toLowerCase();
+        var am = AFFINITY.matcher(s.trim());
+        if (am.matches()) {
+            String id = am.group(2) != null ? am.group(2) : dialogueId;
+            if (id == null) return false;
+            double v = Affinity.get(p, id);
+            return not != compare(String.valueOf((int) v), am.group(3), am.group(4));
+        }
         for (String pre : new String[]{"permission:", "permiso:"})
             if (low.startsWith(pre)) return not != p.hasPermission(s.substring(pre.length()).trim());
         for (String pre : new String[]{"flag:", "marca:"})

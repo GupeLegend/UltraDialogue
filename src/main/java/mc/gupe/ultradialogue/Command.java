@@ -14,6 +14,7 @@ import java.util.Set;
  * /ud reload
  * /ud list
  * /ud flags <player> [clear [flag]]
+ * /ud affinity <player> [id] [set|add|reset] [n]   (el jugador nunca ve este numero)
  * Los subcomandos viejos en español (abrir, recargar, lista, marcas, borrar) siguen valiendo.
  */
 public final class Command implements TabExecutor {
@@ -65,13 +66,41 @@ public final class Command implements TabExecutor {
                 s.sendMessage(Text.msg("flags", "{player}", p.getName(),
                         "{flags}", f.isEmpty() ? pl.lang().raw("none") : String.join(", ", f)));
             }
+            case "affinity", "afinidad" -> {
+                if (a.length < 2) { help(s, l); return true; }
+                Player p = Bukkit.getPlayerExact(a[1]);
+                if (p == null) { s.sendMessage(Text.msg("player-offline")); return true; }
+                if (a.length == 2) {
+                    var all = Affinity.all(p);
+                    s.sendMessage(Text.msg("affinity-list", "{player}", p.getName(),
+                            "{list}", all.isEmpty() ? pl.lang().raw("none") : all.toString().replaceAll("[{}]", "")));
+                    return true;
+                }
+                String id = a[2].toLowerCase();
+                if (a.length >= 4) {
+                    String op = a[3].toLowerCase();
+                    int n = 0;
+                    if (!op.equals("reset")) {
+                        try { n = Integer.parseInt(a.length > 4 ? a[4] : "x"); }
+                        catch (NumberFormatException e) { help(s, l); return true; }
+                    }
+                    switch (op) {
+                        case "set" -> Affinity.set(p, id, n);
+                        case "add" -> Affinity.change(p, id, n, null);   // sin frenos: es el staff
+                        case "reset" -> Affinity.reset(p, id);
+                        default -> { help(s, l); return true; }
+                    }
+                }
+                s.sendMessage(Text.msg("affinity-show", "{player}", p.getName(), "{id}", id,
+                        "{value}", String.valueOf(Affinity.get(p, id))));
+            }
             default -> help(s, l);
         }
         return true;
     }
 
     private void help(CommandSender s, String l) {
-        for (String k : new String[]{"help-open", "help-reload", "help-list", "help-flags"})
+        for (String k : new String[]{"help-open", "help-reload", "help-list", "help-flags", "help-affinity"})
             s.sendMessage(Text.color(pl.lang().raw(k, "{cmd}", l)));
     }
 
@@ -81,7 +110,11 @@ public final class Command implements TabExecutor {
         String sub = a[0].toLowerCase();
         boolean open = sub.equals("open") || sub.equals("abrir");
         boolean flags = sub.equals("flags") || sub.equals("marcas");
-        if (a.length == 1) r.addAll(List.of("open", "reload", "list", "flags"));
+        boolean aff = sub.equals("affinity") || sub.equals("afinidad");
+        if (aff && a.length == 2) for (Player p : Bukkit.getOnlinePlayers()) r.add(p.getName());
+        if (aff && a.length == 3) for (Dialogue d : pl.registry().all()) r.add(d.id);
+        if (aff && a.length == 4) r.addAll(List.of("set", "add", "reset"));
+        if (a.length == 1) r.addAll(List.of("open", "reload", "list", "flags", "affinity"));
         else if (a.length == 2 && open) for (Dialogue d : pl.registry().all()) r.add(d.id);
         else if ((a.length == 3 && open) || (a.length == 2 && flags))
             for (Player p : Bukkit.getOnlinePlayers()) r.add(p.getName());

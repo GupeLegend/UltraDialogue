@@ -37,6 +37,9 @@ public final class Screen {
         public long token;
         public final Location npc;
         public final String texture;
+        /** Afinidad en esta charla: si el cooldown dejo subir (por personaje) y cuanto se sumo. */
+        public final Map<String, Boolean> gainAllowed = new HashMap<>();
+        public final Map<String, Integer> gained = new HashMap<>();
 
         Session(Dialogue d, Location npc, String texture) {
             this.dialogue = d;
@@ -97,18 +100,50 @@ public final class Screen {
 
         pl.actions().sound(p, s.dialogue.sound != null ? s.dialogue.sound : cfg().getString("talk-sound", ""));
 
-        List<Option> options = options(p, n);
+        List<Option> options = options(p, s, n);
         String name = n.speaker() != null ? n.speaker() : s.dialogue.name;
-        if (usesChat(p)) chat(p, n, name, options, token);
-        else dialog(p, s, n, name, options, token);
+        String text = pickText(p, s, n);
+        if (usesChat(p)) chat(p, text, name, options, token);
+        else dialog(p, s, text, name, options, token);
     }
 
     private record Option(Component text, Component tooltip, Dialogue.Answer answer) {}
 
-    private List<Option> options(Player p, Dialogue.Node n) {
+    /** La ultima variante que vio cada jugador en cada nodo: la siguiente vez sale otra. */
+    private final Map<UUID, Map<String, Integer>> lastVariant = new HashMap<>();
+
+    private String pickText(Player p, Session s, Dialogue.Node n) {
+        List<Integer> ok = new ArrayList<>();
+        for (int i = 0; i < n.variants().size(); i++)
+            if (Conditions.test(p, n.variants().get(i).conditions(), s.dialogue.id)) ok.add(i);
+        if (ok.isEmpty()) return n.text();
+        String key = s.dialogue.id + "/" + n.id();
+        Map<String, Integer> seen = lastVariant.computeIfAbsent(p.getUniqueId(), k -> new HashMap<>());
+        Integer before = seen.get(key);
+        if (ok.size() > 1 && before != null) ok.remove(before);
+        int pick = ok.get(RND.nextInt(ok.size()));
+        seen.put(key, pick);
+        return n.variants().get(pick).text();
+    }
+
+    private static final Random RND = new Random();
+
+    private List<Option> options(Player p, Session s, Dialogue.Node n) {
+        List<Dialogue.Answer> fixed = new ArrayList<>(), rotating = new ArrayList<>();
+        for (Dialogue.Answer a : n.answers()) {
+            if (!Conditions.test(p, a.conditions(), s.dialogue.id)) continue;
+            (a.always() || n.show() <= 0 ? fixed : rotating).add(a);
+        }
+        // show: N -> de las que no son "always", solo N al azar. Se respeta el orden del archivo.
+        if (n.show() > 0 && rotating.size() > n.show()) {
+            List<Dialogue.Answer> copy = new ArrayList<>(rotating);
+            Collections.shuffle(copy, RND);
+            Set<Dialogue.Answer> keep = new HashSet<>(copy.subList(0, n.show()));
+            rotating.removeIf(a -> !keep.contains(a));
+        }
         List<Option> r = new ArrayList<>();
         for (Dialogue.Answer a : n.answers()) {
-            if (!Conditions.test(p, a.conditions())) continue;
+            if (!fixed.contains(a) && !rotating.contains(a)) continue;
             r.add(new Option(Text.color(p, a.text()), a.tooltip() == null ? null : Text.color(p, a.tooltip()), a));
         }
         // Sin respuestas: "Continuar" si hay next, y si no un "Adios" para poder salir.
@@ -116,17 +151,17 @@ public final class Screen {
             boolean more = n.next() != null;
             String t = pl.lang().raw(more ? "button-continue" : "button-goodbye");
             r.add(new Option(Text.color(p, t), null,
-                    new Dialogue.Answer(t, null, List.of(), more ? n.next() : "end", List.of())));
+                    new Dialogue.Answer(t, null, List.of(), more ? n.next() : "end", List.of(), false)));
         }
         return r;
     }
 
-    private void dialog(Player p, Session s, Dialogue.Node n, String name, List<Option> options, long token) {
+    private void dialog(Player p, Session s, String textRaw, String name, List<Option> options, long token) {
         int textWidth = clamp(cfg().getInt("screen.text-width", 260));
         int buttonWidth = clamp(cfg().getInt("screen.button-width", 220));
         int columns = s.dialogue.columns > 0 ? s.dialogue.columns : cfg().getInt("screen.columns", 1);
 
-        Component text = Text.color(p, n.text());
+        Component text = Text.color(p, textRaw);
         ItemStack head = pl.portraits().of(s.dialogue.portrait, s.texture);
         List<DialogBody> body = new ArrayList<>();
         if (head != null) {
@@ -150,7 +185,7 @@ public final class Screen {
 
         var type = DialogType.multiAction(buttons).columns(Math.max(1, columns));
         if (cfg().getBoolean("screen.exit-button", false)) {
-            Dialogue.Answer leave = new Dialogue.Answer(null, null, List.of(), "end", List.of());
+            Dialogue.Answer leave = new Dialogue.Answer(null, null, List.of(), "end", List.of(), true);
             type.exitAction(ActionButton.builder(Text.color(pl.lang().raw("button-goodbye")))
                     .width(buttonWidth)
                     .action(DialogAction.customClick((view, who) -> click(who, token, leave), once))
@@ -172,10 +207,10 @@ public final class Screen {
         p.showDialog(Dialog.create(f -> f.empty().base(base).type(built)));
     }
 
-    private void chat(Player p, Dialogue.Node n, String name, List<Option> options, long token) {
+    private void chat(Player p, String textRaw, String name, List<Option> options, long token) {
         p.sendMessage(Component.empty());
         p.sendMessage(Text.color(p, pl.lang().raw("chat-header", "{name}", name)));
-        for (String line : n.text().split("\n")) p.sendMessage(Text.color(p, " " + line));
+        for (String line : textRaw.split("\n")) p.sendMessage(Text.color(p, " " + line));
         String format = pl.lang().raw("chat-option");
         ClickCallback.Options once = ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(15)).build();
         for (Option o : options) {
@@ -223,7 +258,10 @@ public final class Screen {
         if (!usesChat(p)) p.closeDialog();
     }
 
-    public void forget(Player p) { sessions.remove(p.getUniqueId()); }
+    public void forget(Player p) {
+        sessions.remove(p.getUniqueId());
+        lastVariant.remove(p.getUniqueId());
+    }
 
     public void closeAll() {
         for (UUID id : new ArrayList<>(sessions.keySet())) {

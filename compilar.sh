@@ -8,7 +8,7 @@ set -e
 cd "$(dirname "$0")"
 
 NOMBRE="UltraDialogue"
-VER="1.0"
+VER="1.1"
 MC="26.1.2.build.74-stable"   # API de Paper contra la que se compila
 
 # Paper 26.x esta compilado para Java 25: con un JDK menor javac dice "cannot access Player"

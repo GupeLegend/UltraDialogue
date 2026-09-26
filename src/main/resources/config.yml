@@ -31,3 +31,15 @@ cooldown-ms: 700
 max-distance: 8.0
 # Played every time the NPC speaks (empty = none). Each dialogue can override it.
 talk-sound: 'entity.villager.ambient 0.6 1.1'
+
+# Affinity: a hidden number per player and per character (0 = strangers). Answers change it with
+# "affinity: +2" / "affinity: -3", and "if: affinity >= 20" unlocks new lines. Players are never told.
+# Each dialogue can override these with its own "affinity:" section.
+affinity:
+  min: 0
+  max: 100
+  # A character only GIVES affinity once every this many minutes, per player (anti-farming).
+  # Losing affinity has no limit.
+  cooldown-minutes: 30
+  # Most affinity a single conversation can give.
+  max-per-talk: 3

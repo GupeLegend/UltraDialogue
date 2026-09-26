@@ -1,0 +1,219 @@
+# ==================================================================================
+#  AFFINITY TEMPLATE - Kadir, a traveller who warms up to you the more you talk.
+#
+#  Affinity is a hidden number per player (starts at 0). Kind answers raise it, rude ones
+#  lower it, and "start:" picks a different greeting depending on how close you are.
+#  The player is NEVER told the number changed. Staff can check it: /ud affinity <player> kadir
+#
+#  Try it without an NPC:  /ud open kadir
+# ==================================================================================
+
+name: '&6&lKadir'
+npcs: [kadir]
+portrait: 'npc | item:COMPASS'
+sound: 'entity.wandering_trader.ambient 0.6 0.9'
+
+# Optional: overrides the "affinity:" defaults in config.yml for this character only.
+affinity:
+  min: 0
+  max: 100
+  cooldown-minutes: 30   # he only GIVES affinity once every 30 min (losing it has no limit)
+  max-per-talk: 3        # and at most 3 points per conversation
+
+# The first rule that matches wins, so the highest level goes first.
+start:
+  - if: 'affinity >= 50'
+    node: close_friend
+  - if: 'affinity >= 25'
+    node: friend
+  - if: 'affinity >= 10'
+    node: acquaintance
+  - node: stranger
+
+nodes:
+
+  stranger:
+    # "variants": one is picked at random every time (never the same one twice in a row).
+    variants:
+      - '&7&o*glances at you* &fYes? What do you want?'
+      - "I don't usually talk to strangers. Make it quick."
+      - "&7&o*keeps polishing his compass without looking up*"
+      - "If you're here to sell me something, I'm not interested."
+    # "show": only 2 of these questions appear each time, picked at random.
+    # Answers with "always: true" don't count and always appear.
+    show: 2
+    answers:
+      - text: '&7Hello. Who are you?'
+        actions: ['affinity: +2']
+        goto: who
+      - text: '&7Where are you from?'
+        actions: ['affinity: +1']
+        goto: origin
+      - text: '&7Nice compass.'
+        actions: ['affinity: +1']
+        goto: compass
+      - text: '&8Out of my way, old man.'
+        actions: ['affinity: -3']
+        goto: offended
+      - text: '&8Goodbye.'
+        always: true
+        goto: end
+
+  who:
+    text:
+      - 'Kadir. Mapmaker, traveller... whatever it takes to keep walking.'
+      - "I've drawn more deserts than you've ever seen."
+    answers:
+      - text: '&7Nice to meet you, Kadir.'
+        actions: ['affinity: +1']
+        goto: end
+      # Re-opening the same dialogue re-checks "start:", so the greeting follows the new level.
+      - text: '&7« Keep talking'
+        actions: ['dialogue: kadir']
+
+  origin:
+    text: "The south. Where the sand swallows the roads and the sun shows no mercy."
+    answers:
+      - text: '&7« Keep talking'
+        actions: ['dialogue: kadir']
+      - text: '&8Goodbye.'
+        goto: end
+
+  compass:
+    text: "&7&o*puts it away* &fIt doesn't point north. It points to what I'm looking for. None of your business."
+    answers:
+      - text: "&7Sorry, I didn't mean to pry."
+        actions: ['affinity: +1']
+        goto: end
+      - text: '&7« Keep talking'
+        actions: ['dialogue: kadir']
+
+  offended:
+    text: "&7&o*frowns* &fManners cost nothing, you know."
+
+  acquaintance:
+    variants:
+      - 'Ah, you again, &e%player%&f.'
+      - "&e%player%&f. I thought you'd left the region by now."
+      - '&7&o*nods at you* &fGood day for walking, eh?'
+      - "You come by often. I'm getting used to your face."
+    show: 3
+    answers:
+      - text: "&7What's out in the desert?"
+        actions: ['affinity: +2']
+        goto: desert
+      - text: '&7Any advice for staying alive?'
+        actions: ['affinity: +2']
+        goto: advice
+      - text: '&7What are you looking for with that compass?'
+        actions: ['affinity: +1']
+        goto: compass2
+      - text: "&8You're boring, Kadir."
+        actions: ['affinity: -3']
+        goto: offended
+      - text: '&8See you.'
+        always: true
+        goto: end
+
+  desert:
+    text:
+      - "Sand, thirst... and worse. There's a pharaoh out there who never quite finished dying."
+      - 'If you see sand moving on its own, run.'
+    answers:
+      - text: '&7« Keep talking'
+        actions: ['dialogue: kadir']
+
+  advice:
+    variants:
+      - 'Never cross the Nether without spare food. Never.'
+      - "If a boss shows up nearby, don't go alone."
+      - 'Sleep when you can. Some nights the moon is not on your side.'
+    answers:
+      - text: "&7I'll keep it in mind."
+        actions: ['affinity: +1']
+        goto: end
+      - text: '&7« Keep talking'
+        actions: ['dialogue: kadir']
+
+  compass2:
+    text: "&7&o*hesitates* &fOne day I'll tell you. Not today."
+    answers:
+      - text: '&7« Keep talking'
+        actions: ['dialogue: kadir']
+
+  friend:
+    variants:
+      - '&e%player%&f! I was just thinking about you. Sit, sit.'
+      - 'My old friend &e%player%&f. What brings you here?'
+      - "&7&o*smiles* &fI knew you'd come back."
+    show: 2
+    answers:
+      # Only shows up once you are friends: "if" hides it below 25.
+      - text: '&6Will you tell me about the temple?'
+        if: 'affinity >= 25'
+        actions: ['affinity: +2']
+        goto: temple
+      - text: '&7Why do you travel alone?'
+        actions: ['affinity: +2']
+        goto: alone
+      - text: '&7Any advice?'
+        actions: ['affinity: +1']
+        goto: advice
+      - text: "&8I'm tired of your stories."
+        actions: ['affinity: -5']
+        goto: offended
+      - text: '&8See you soon, Kadir.'
+        always: true
+        goto: end
+
+  temple:
+    text:
+      - "Under the sand, to the south, there's a temple that isn't on any map. Not even mine."
+      - 'I went in once. I came out with this compass... and without my brother.'
+    answers:
+      - text: "&7I'm so sorry."
+        actions: ['affinity: +2']
+        goto: end
+      - text: '&7« Keep talking'
+        actions: ['dialogue: kadir']
+
+  alone:
+    text: "I didn't always. But long roads take people away, &e%player%&f. Look after yours."
+    answers:
+      - text: '&7Now you have me.'
+        actions: ['affinity: +3']
+        goto: end
+
+  close_friend:
+    variants:
+      - '&e%player%&f, brother. You are one of the few people I trust.'
+      - '&7&o*hugs you* &fFinally! I have something to tell you.'
+    answers:
+      - text: '&6The compass... what does it really look for?'
+        goto: secret
+      # A one-time gift: the flag hides this answer after the first time.
+      - text: '&dKadir, do you have something for me?'
+        if: '!flag:kadir_gift'
+        goto: gift
+      - text: '&8See you, brother.'
+        always: true
+        goto: end
+
+  secret:
+    text:
+      - '&7&o*lowers his voice* &fIt looks for my brother. Not his body... his soul.'
+      - 'If you ever find a soul that belongs to no boss, bring it to me. No one else can know.'
+    answers:
+      - text: '&7I promise.'
+        actions: ['flag: kadir_secret']
+        goto: end
+
+  gift:
+    text: "Here. It's been with me on every journey. Now it's yours to look after."
+    on-show:
+      - 'flag: kadir_gift'
+      - 'console: give %player% minecraft:recovery_compass 1'
+      - 'sound: entity.player.levelup 0.8 1.2'
+    answers:
+      - text: "&7Thank you, Kadir. I'll take care of it."
+        goto: end

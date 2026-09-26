@@ -25,12 +25,13 @@ import java.util.Set;
  *   title: Title|Subtitle
  *   sound: entity.villager.yes 1 1   (tambien ENTITY_VILLAGER_YES)
  *   flag: name   unflag: name
+ *   affinity: +2 / -3 / =10       (tambien "affinity: otro_npc +2"; ver Affinity)
  *   close
  */
 public final class Actions {
 
     public static final Set<String> TYPES = Set.of("goto", "dialogue", "menu", "command", "console", "message",
-            "broadcast", "actionbar", "title", "sound", "flag", "unflag", "close");
+            "broadcast", "actionbar", "title", "sound", "flag", "unflag", "close", "affinity");
 
     private static final Map<String, String> ALIASES = new HashMap<>();
     static {
@@ -47,6 +48,7 @@ public final class Actions {
         ALIASES.put("marcar", "flag");
         ALIASES.put("desmarcar", "unflag");
         ALIASES.put("cerrar", "close");
+        ALIASES.put("afinidad", "affinity");
     }
 
     private final UltraDialogue pl;
@@ -105,6 +107,14 @@ public final class Actions {
                     case "flag" -> Flags.set(p, v, true);
                     case "unflag" -> Flags.set(p, v, false);
                     case "close" -> pl.screen().close(p);
+                    case "affinity" -> {
+                        Object[] x = parseAffinity(t[1], s.dialogue.id);
+                        if (x == null) { pl.getLogger().warning("Bad affinity action: '" + a + "'"); break; }
+                        String id = (String) x[0];
+                        int n = (int) x[2];
+                        if ((char) x[1] == '=') Affinity.set(p, id, n);
+                        else Affinity.change(p, id, n, s);
+                    }
                     default -> pl.getLogger().warning("Unknown action: '" + a + "'");
                 }
             } catch (Exception e) {
@@ -128,6 +138,24 @@ public final class Actions {
             p.playSound(p.getLocation(), snd, vol, pitch);
         } catch (ReflectiveOperationException e) {
             pl.getLogger().warning("Unknown sound: '" + name + "'");
+        }
+    }
+
+    /**
+     * "+2" / "-3" / "=10" / "kadir +2"  ->  {id, '+' o '=', numero}. null si no se entiende.
+     * Sin id, es la afinidad con el personaje del dialogo actual.
+     */
+    public static Object[] parseAffinity(String v, String defaultId) {
+        String[] parts = v.trim().split("\\s+");
+        if (parts.length == 0 || parts.length > 2 || parts[0].isEmpty()) return null;
+        String id = parts.length == 2 ? parts[0].toLowerCase(Locale.ROOT) : defaultId;
+        String num = parts[parts.length - 1];
+        char op = num.startsWith("=") ? '=' : '+';
+        if (op == '=' || num.startsWith("+")) num = num.substring(1);
+        try {
+            return new Object[]{id, op, Integer.parseInt(num)};
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 

@@ -75,6 +75,13 @@ public final class Registry {
         Dialogue d = new Dialogue(id, strOr(any(y, "name", "nombre"), id), strOr(any(y, "portrait", "retrato"), "npc"),
                 str(any(y, "sound", "sonido")), cols instanceof Number n ? n.intValue() : 0, npcs, start);
 
+        if (any(y, "affinity", "afinidad") instanceof ConfigurationSection af) {
+            if (af.contains("min")) d.affinityMin = af.getInt("min");
+            if (af.contains("max")) d.affinityMax = af.getInt("max");
+            if (any(af, "cooldown-minutes", "cooldown-minutos") instanceof Number cd) d.affinityCooldown = cd.doubleValue();
+            if (any(af, "max-per-talk", "max-por-charla") instanceof Number per) d.affinityPerTalk = per.intValue();
+        }
+
         Object ns = any(y, "nodes", "nodos");
         if (!(ns instanceof ConfigurationSection sec) || sec.getKeys(false).isEmpty())
             throw new IllegalStateException("has no 'nodes'");
@@ -87,12 +94,25 @@ public final class Registry {
                 for (Object o : l) {
                     if (!(o instanceof Map<?, ?> m)) continue;
                     as.add(new Dialogue.Answer(str(any(m, "text", "texto")), str(m.get("tooltip")),
-                            list(any(m, "if", "si")), str(any(m, "goto", "ir")), list(any(m, "actions", "acciones"))));
+                            list(any(m, "if", "si")), str(any(m, "goto", "ir")), list(any(m, "actions", "acciones")),
+                            Boolean.TRUE.equals(any(m, "always", "siempre"))));
                 }
             }
-            d.nodes.put(k, new Dialogue.Node(k, str(any(n, "speaker", "name", "nombre")),
-                    String.join("\n", list(any(n, "text", "texto"))),
-                    list(any(n, "on-show", "al-mostrar")), as, str(any(n, "next", "siguiente"))));
+            // Frases alternativas: cada una es una linea, una lista de lineas, o {text, if}.
+            List<Dialogue.Variant> vs = new ArrayList<>();
+            if (any(n, "variants", "variantes") instanceof List<?> l) {
+                for (Object o : l) {
+                    if (o instanceof Map<?, ?> m)
+                        vs.add(new Dialogue.Variant(String.join("\n", list(any(m, "text", "texto"))), list(any(m, "if", "si"))));
+                    else
+                        vs.add(new Dialogue.Variant(String.join("\n", list(o)), List.of()));
+                }
+            }
+            String text = String.join("\n", list(any(n, "text", "texto")));
+            if (text.isEmpty() && vs.isEmpty()) warn(id, k + ": node has no 'text' nor 'variants'");
+            d.nodes.put(k, new Dialogue.Node(k, str(any(n, "speaker", "name", "nombre")), text, vs,
+                    list(any(n, "on-show", "al-mostrar")), as, str(any(n, "next", "siguiente")),
+                    any(n, "show", "mostrar") instanceof Number num ? num.intValue() : 0));
         }
 
         byId.put(id, d);
@@ -122,6 +142,8 @@ public final class Registry {
             String[] t = Actions.split(a);
             if (!Actions.TYPES.contains(t[0])) warn(d.id, where + ": unknown action '" + a + "'");
             else if (t[0].equals("goto")) node(d, t[1], where);
+            else if (t[0].equals("affinity") && Actions.parseAffinity(t[1], d.id) == null)
+                warn(d.id, where + ": bad affinity action '" + a + "' (use +2, -3, =10 or '<id> +2')");
             else if (t[0].equals("dialogue")) {
                 String[] p = t[1].split("\\s+");
                 Dialogue o = byId.get(p[0].toLowerCase(Locale.ROOT));

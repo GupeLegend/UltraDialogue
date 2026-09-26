@@ -28,6 +28,7 @@ public final class UltraDialogue extends JavaPlugin {
         if (!view.file("dialogues").exists()) {
             view.saveResource("dialogues/example.yml");
             view.saveResource("dialogues/merchant.yml");
+            view.saveResource("dialogues/kadir.yml");
         }
         lang = new Lang(this);
         lang.load(config().getString("language", "en"));

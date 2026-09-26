@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/Logo.png" alt="UltraDialogue" width="280"></p>
+
 # UltraDialogue
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.1.2-brightgreen)](https://papermc.io)
@@ -13,7 +15,11 @@ A Paper plugin by **Social Studio**.
 It uses the **native dialog screens** Minecraft added in 1.21.6, so there's no resource pack, no
 client mod and no chat spam: the conversation opens on screen, like in an RPG.
 
-![UltraDialogue preview](docs/preview.png)
+<p align="center">
+  <img src="docs/Preview1.png" alt="A test NPC with several answers" width="32%">
+  <img src="docs/Preview2.png" alt="The Guide NPC greeting the player by name" width="32%">
+  <img src="docs/Preview3.png" alt="Several lines of text with colours and a Continue button" width="32%">
+</p>
 
 ---
 
@@ -26,6 +32,11 @@ client mod and no chat spam: the conversation opens on screen, like in an RPG.
   PlaceholderAPI placeholder (`%vault_eco_balance% >= 1000`).
 - **Player flags**: remember that someone already met a character, accepted a job or finished a
   step, and greet them differently next time. Stored on the player, no database.
+- **Affinity** *(1.1)*: a hidden friendship level per player and per character. Kind answers raise
+  it, rude ones lower it, and new greetings, questions and secrets unlock as it grows. Players are
+  never told the number changed.
+- **Conversations that never repeat** *(1.1)*: several variants per line (a different one every
+  time) and questions that rotate, so talking to the same NPC twice doesn't feel scripted.
 - **Portraits**: the NPC's own skin, any player's skin, a fixed texture, or any item.
 - **FancyNpcs support out of the box**: link a dialogue to an NPC by name and clicking it opens the
   talk *instead of* its FancyNpcs actions. Your `npcs.yml` is never touched.
@@ -81,6 +92,7 @@ nodes:
 | `title: Title\|Subtitle` | On-screen title |
 | `sound: entity.villager.yes 1 1` | Also accepts `ENTITY_VILLAGER_YES` |
 | `flag: x` · `unflag: x` | Set or remove a player flag |
+| `affinity: +2` · `affinity: -3` · `affinity: =10` | Change affinity with this character (`affinity: kadir +2` for another one) |
 | `close` | Close the screen |
 
 When an answer ends the talk (opens a menu, runs a command…) the screen closes **before** the
@@ -94,7 +106,50 @@ Every line of the list must match; inside a line, `||` means "or".
 permission:group.vip       !permission:group.vip
 flag:met_merchant          !flag:met_merchant
 %vault_eco_balance% >= 1000          ( ==  !=  >=  <=  >  <  contains )
+affinity >= 20             affinity:kadir >= 20
 ```
+
+## Affinity and conversations that change
+
+Every player has a hidden **affinity** with every character, starting at 0. Answers change it, and
+conditions read it — so the same NPC can be cold with strangers and open up to friends:
+
+```yaml
+start:
+  - if: 'affinity >= 25'
+    node: friend
+  - node: stranger
+
+nodes:
+  stranger:
+    variants:                        # a different one each time, never the same twice in a row
+      - 'Yes? What do you want?'
+      - "I don't usually talk to strangers."
+    show: 2                          # only 2 of these questions appear, picked at random
+    answers:
+      - text: '&7Hello. Who are you?'
+        actions: ['affinity: +2']
+        goto: who
+      - text: '&8Out of my way.'
+        actions: ['affinity: -3']
+        goto: end
+      - text: '&8Goodbye.'
+        always: true                 # never rotated out
+        goto: end
+```
+
+- **The player never sees the number** and is never told it changed. Staff can check it with
+  `/ud affinity <player> <id>`.
+- **Anti-farming:** a character only *gives* affinity once every `cooldown-minutes` (30 by default),
+  and at most `max-per-talk` points (3) per conversation. Losing affinity has no limit.
+- Defaults live in `config.yml` under `affinity:`; each dialogue can override them with its own
+  `affinity:` section.
+- It only exists in dialogues that use it. Menu NPCs that don't mention affinity behave exactly as
+  before.
+- A variant can have its own `if:` (`{text: ..., if: 'affinity >= 10'}`).
+
+`dialogues/kadir.yml` is a complete example with four friendship levels, rotating questions and a
+one-time gift.
 
 ## Commands and permissions
 
@@ -106,6 +161,7 @@ All under `ultradialogue.admin` (op by default). Aliases: `/ud`, `/dialogue`.
 | `/ud reload` | Reload config, language and every dialogue |
 | `/ud list` | Loaded dialogues and their NPCs |
 | `/ud flags <player> [clear [flag]]` | See or clear a player's flags |
+| `/ud affinity <player> [id] [set\|add\|reset] [n]` | See or change affinity (staff only; `add` ignores the anti-farming limits) |
 
 Players need no permission to talk to NPCs.
 
@@ -162,6 +218,7 @@ src/main/java/mc/gupe/ultradialogue/
   Actions.java          runs actions
   Conditions.java       evaluates if:
   Flags.java            per-player flags (PersistentDataContainer)
+  Affinity.java         per-player, per-character affinity and its anti-farming limits
   Portraits.java        the head / item next to the text
   NpcHook.java          the FancyNpcs click, by reflection
   Listeners.java        entity tags, click cooldown, quit
@@ -171,7 +228,7 @@ src/main/java/mc/gupe/ultradialogue/
 src/main/resources/
   config.yml
   lang/{en,es}.yml
-  dialogues/{example,merchant}.yml
+  dialogues/{example,merchant,kadir}.yml
 ```
 
 ## Notes for contributors

@@ -1,5 +1,5 @@
 name: UltraDialogue
-version: '1.0'
+version: '1.1'
 main: mc.gupe.ultradialogue.UltraDialogue
 api-version: '26.1.2'
 author: Social Studio
@@ -23,6 +23,7 @@ commands:
       /ud reload
       /ud list
       /ud flags <player> [clear [flag]]
+      /ud affinity <player> [id] [set|add|reset] [n]
 
 permissions:
   ultradialogue.admin:
