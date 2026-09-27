@@ -28,6 +28,14 @@ client mod and no chat spam: the conversation opens on screen, like in an RPG.
 - **Branching conversations** written in YAML: nodes, answers, and where each answer leads.
 - **Actions on any answer:** go to another node or dialogue, open a menu, run a player or console
   command, send a message / title / action bar, play a sound.
+- **Button sizes and icons** *(1.1.1)*: four button sizes like the pause menu (from the tiny square
+  to full width) and 20 built-in pixel-art icons — quest, accept, question, shop, secret, gift and
+  more, some animated. Served by the plugin, with text symbols for anyone without the pack.
+- **The NPC's face** *(1.1.1)*: a 2D face from the NPC's skin next to its name.
+- **Deliveries** *(1.1.1)*: check, take and give items — vanilla, UltraBoss souls, or any item by
+  its hidden tag, model or name. Taking is all-or-nothing and is checked again on click (no dupes).
+- **Story locks and quests** *(1.1.1)*: conditions on BeautyQuests quests (`quest: completed 12`),
+  its own BeautyQuests stage type, and placeholders for affinity and flags.
 - **Conditions** that hide answers or change where a talk starts — permissions, player flags, and any
   PlaceholderAPI placeholder (`%vault_eco_balance% >= 1000`).
 - **Player flags**: remember that someone already met a character, accepted a job or finished a
@@ -151,6 +159,178 @@ nodes:
 `dialogues/kadir.yml` is a complete example with four friendship levels, rotating questions and a
 one-time gift.
 
+## Button sizes and icons
+
+```yaml
+nodes:
+  confirm:
+    text: 'Will you take the job?'
+    columns: 2                 # this node only: two buttons per row
+    answers:
+      - text: '&aYes'
+        icon: accept
+        size: 2                # half width, like "Options..."
+        goto: accepted
+      - text: '&cNo'
+        icon: exit
+        size: 2
+        goto: end
+      - text: ''
+        icon: question         # size 1 fits only the icon, like the "report" button
+        size: 1
+        tooltip: '&7What is this job?'
+        goto: details
+```
+
+| Size | Width | Like in the pause menu |
+|---|---|---|
+| `size: 1` | 20 px | the small square "report" button |
+| `size: 2` | 98 px | "Options...", half width |
+| `size: 3` | 150 px | a medium button |
+| `size: 4` | 204 px | "Disconnect", full width |
+| `width: 130` | any, 1–1024 | exact width |
+
+Buttons are always 20 px tall — that's Minecraft. `columns:` works on the whole dialogue or on a
+single node.
+
+**Icons** (`/ud icons` lists them in game):
+
+| Name | English | Text fallback | | Name | English | Text fallback |
+|---|---|---|---|---|---|---|
+| `mision` | `quest` | `!` | | `gema` | `gem` | `◆` |
+| `aceptar` | `accept` | `✔` | | `espada` | `sword` | `⚔` |
+| `pregunta` | `question` | `?` | | `corazon` | `heart` | `❤` |
+| `charla` | `talk` | `☺` | | `calavera` | `skull` | `☠` |
+| `tienda` | `shop` | `$` | | `cofre` | `chest` | `▣` |
+| `secreto` | `secret` | `✦` | | `llave` | `key` | `⚷` |
+| `eleccion` | `choice` | `✧` | | `mapa` | `map` | `▤` |
+| `regalo` | `gift` | `❖` | | `estrella` | `star` | `★` |
+| `volver` | `back` | `«` | | `libro` | `book` | `❏` |
+| `salir` | `exit` | `✖` | | `staff` | `admin` | `☼` |
+
+Animated: quest, talk, secret, choice, gift, staff, gem, heart and star.
+
+- The icons are drawn **inside the text**, at the height of a letter, with Minecraft's sprite text
+  objects (1.21.9+). The pictures come in a small resource pack that the plugin **serves by itself**
+  on port **8083** and that stacks with any other pack.
+- Anyone who **didn't load the pack** (declined it, download failed, or an old client through
+  ViaVersion) sees the **text symbol** in the icon's colour instead — never a missing-texture square.
+- `icons.mode` in `config.yml`: `auto` (default), `sprite` (always pictures — if you merge the pack
+  into your own), or `text` (always symbols, no pack).
+
+**The NPC's face:** portraits `npc`, `player:Name` and `texture:...` now show as a 2D face from the
+skin, next to the NPC's name. The player's own client draws it: the server never asks Mojang for
+anything. `item:` portraits still show the item on the left.
+
+## Deliveries
+
+| Condition | Action |
+|---|---|
+| `has: IRON_INGOT 16` (`tiene:`) — anywhere in the inventory | `take: IRON_INGOT 16` (`quitar:`) — all or nothing |
+| `hand: IRON_INGOT 16` (`mano:`) — main hand only | `give: IRON_INGOT 16` (`dar:`) |
+
+Items can be written as:
+
+| Format | Matches |
+|---|---|
+| `IRON_INGOT` / `minecraft:iron_ingot` | that vanilla item — **only plain ones**: items with a plugin's hidden tag or their own model don't count, so `GOLD_NUGGET` never takes an UltraBoss soul |
+| `ultraboss:AlmaFaraon` | an UltraBoss item (also the ones from its older names) |
+| `ultrarevive:self` / `boost` / `end` | an UltraRevive totem |
+| `pdc:<namespace:key>=<value>` | any plugin's hidden tag |
+| `item_model:ultraboss:alma_faraon` | by item model |
+| `name:&6Cellar Key` (`nombre:`) | by display name (last resort) |
+
+```yaml
+deliver:
+  text: 'Did you bring the iron for the forge?'
+  answers:
+    - text: '&aHand over 16 iron ingots'
+      icon: accept
+      if: 'has: IRON_INGOT 16'
+      actions:
+        - 'take: IRON_INGOT 16'
+        - 'give: EMERALD 4'
+        - 'affinity: +3'
+      goto: thanks
+    - text: "&8I don't have them yet"
+      if: '!has: IRON_INGOT 16'
+      goto: end
+```
+
+- **`take:` is atomic**: it counts first and takes nothing if there isn't enough. Main hand first,
+  then the rest of the inventory.
+- **If `take:` fails, the rest of that answer's actions are cut** — a reward is never given without
+  collecting first. The player gets the `item-missing` message.
+- **Conditions are checked again when the button is clicked.** Open the dialogue with 16 ingots,
+  drop them, press "Hand over": nothing is taken, nothing is given, the screen redraws.
+- `give:` builds vanilla items itself; UltraBoss and UltraRevive items are given through their own
+  command, so they come out with every tag, name and texture.
+- A start rule can react to what the player is holding: `if: 'hand: IRON_INGOT 16'`.
+
+## Story locks and BeautyQuests
+
+Use quests (or flags, or affinity with another character) to decide what an NPC says — so players
+can't skip to the end of the story:
+
+```yaml
+start:
+  - if: '!quest: completed 12'
+    node: too_early              # "What are you doing here? You haven't even found the key."
+  - node: final_scene
+```
+
+| Condition | True when |
+|---|---|
+| `quest: completed <id>` (`mision: completada`) | the player finished that BeautyQuests quest |
+| `quest: started <id>` (`mision: en-curso`) | it's started and not finished |
+| `quest: active <key>` (`mision: activa`) | the player is **right now** at an `ULTRADIALOGUE` stage with that key |
+
+| Action | What it does |
+|---|---|
+| `quest: complete <key>` (`mision: completar`) | completes every `ULTRADIALOGUE` stage with that key the player is on |
+| `quest: start <id>` (`mision: empezar`) | starts the quest, respecting its requirements |
+| `quest: force <id>` (`mision: forzar`) | starts it without requirements |
+
+**The `ULTRADIALOGUE` stage type.** UltraDialogue registers its own stage in BeautyQuests, so an NPC
+with a dialogue can take part in quests natively:
+
+```yaml
+# in the BeautyQuests quest file
+'3':
+  stageType: ULTRADIALOGUE
+  key: brann_iron
+  npc: brann                  # optional, only for the description
+  customText: '§7Bring §f16 iron ingots §7to §fBrann'
+```
+
+```yaml
+# in the dialogue
+- text: '&a✔ Hand over the iron'
+  if: ['quest: active brann_iron', 'has: IRON_INGOT 16']
+  actions: ['take: IRON_INGOT 16', 'quest: complete brann_iron']
+```
+
+It can also be created from BeautyQuests' in-game editor (it asks for the key). Two quests on the
+same key both advance.
+
+`quest: complete` fires a plain Bukkit event, **`DialogueSignalEvent(player, key)`** — any plugin can
+listen to it, with or without BeautyQuests.
+
+**Without BeautyQuests** everything still loads: quest conditions are false, `start`/`force` do
+nothing, and the console says so once per dialogue.
+
+## Placeholders
+
+With PlaceholderAPI:
+
+| Placeholder | Value |
+|---|---|
+| `%ultradialogue_affinity_<id>%` | the player's affinity with that character |
+| `%ultradialogue_flag_<flag>%` | `true` / `false` |
+
+Use them as real quest requirements in BeautyQuests (`placeholderRequired`), to lock menu items in
+DeluxeMenus, or anywhere else.
+
 ## Commands and permissions
 
 All under `ultradialogue.admin` (op by default). Aliases: `/ud`, `/dialogue`.
@@ -162,6 +342,7 @@ All under `ultradialogue.admin` (op by default). Aliases: `/ud`, `/dialogue`.
 | `/ud list` | Loaded dialogues and their NPCs |
 | `/ud flags <player> [clear [flag]]` | See or clear a player's flags |
 | `/ud affinity <player> [id] [set\|add\|reset] [n]` | See or change affinity (staff only; `add` ignores the anti-farming limits) |
+| `/ud icons` | Every icon with its name, drawn the way that player sees them |
 
 Players need no permission to talk to NPCs.
 
@@ -180,10 +361,14 @@ Everything else is optional and detected at runtime:
 | PlaceholderAPI | Placeholders in text, actions and conditions |
 | DeluxeMenus | The `menu:` action (any menu plugin works — change `menu-command`) |
 | ViaVersion | Sends old clients the chat version |
+| BeautyQuests 2.1 | Quest conditions and actions, the `ULTRADIALOGUE` stage type |
 
 ## Install
 
-Drop the jar in `plugins/` and start the server. Two example dialogues are created.
+Drop the jar in `plugins/` and start the server. Three example dialogues are created.
+
+For the icons, open port **8083** in your host's panel. If it isn't open, the console says so and
+icons fall back to their text symbols — everything else works the same.
 
 Data lives in **`plugins/UltraView/UltraDialogue/`**, the shared folder of the Ultra plugin family.
 Your config and dialogues are never overwritten on update.
@@ -219,16 +404,25 @@ src/main/java/mc/gupe/ultradialogue/
   Conditions.java       evaluates if:
   Flags.java            per-player flags (PersistentDataContainer)
   Affinity.java         per-player, per-character affinity and its anti-farming limits
-  Portraits.java        the head / item next to the text
+  Portraits.java        the item next to the text (item: portraits)
+  Icons.java            the 20 icons, their text fallbacks and the NPC's 2D face
+  PackManager.java      serves the icon pack and tracks who loaded it
+  PackServer.java       the small HTTP server behind it
   NpcHook.java          the FancyNpcs click, by reflection
   Listeners.java        entity tags, click cooldown, quit
   Command.java          /ud
+  Items.java            has / hand / take / give and the item formats
+  QuestBridge.java      what UltraDialogue needs from a quest plugin
+  DialogueSignalEvent   the event behind "quest: complete"
+  hook/bq/              BeautyQuests: the bridge and the ULTRADIALOGUE stage (loaded only if present)
+  hook/papi/            the PlaceholderAPI expansion (loaded only if present)
   Lang.java / Text.java messages, colours, placeholders
 
 src/main/resources/
   config.yml
   lang/{en,es}.yml
   dialogues/{example,merchant,kadir}.yml
+  resourcepack.zip           the icons (built from TexturePacks/UltraDialogue)
 ```
 
 ## Notes for contributors
@@ -240,6 +434,17 @@ before a reload — does nothing. If you touch `Screen`, every `show()` must min
 closing the dialog sends the client back to the screen it had *before* the wait — the same dialog —
 so "Goodbye" looked like it didn't work the first time. Every path in `answer()` must end in `show()`
 or `close()`.
+
+**Classes that import another plugin live in `hook/` and are loaded by name** only when that plugin
+is enabled. Never import BeautyQuests or PlaceholderAPI classes from the core: without them the JVM
+would throw `NoClassDefFoundError` and the whole plugin would fail to start.
+
+**Conditions are checked twice**: when the screen is drawn and again on click (`Screen.answer`).
+Don't remove the second check — it's what stops item dupes.
+
+**Sprites need a fallback.** A sprite the client doesn't have renders as the purple-and-black
+missing texture. `Icons.of()` only sends a sprite to players whose `PlayerResourcePackStatusEvent`
+said `SUCCESSFULLY_LOADED` for this plugin's pack; everyone else gets the text symbol.
 
 **Never ask Mojang for a skin on the main thread.** `player:` portraits are resolved in the
 background when dialogues load and cached.

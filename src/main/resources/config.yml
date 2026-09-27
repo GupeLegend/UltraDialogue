@@ -43,3 +43,22 @@ affinity:
   cooldown-minutes: 30
   # Most affinity a single conversation can give.
   max-per-talk: 3
+
+# Icons on buttons ("icon: quest") and the 2D face next to the NPC name.
+# auto   = pictures for players who loaded the icon pack, text symbols for everyone else
+# sprite = always pictures (use it if you serve the pack yourself, merged with other packs)
+# text   = always text symbols (! ✔ ? $ ...), no pack needed
+icons:
+  mode: auto
+
+# The icon pack travels inside the jar and the plugin serves it on its own port.
+# It stacks with other packs (UltraRevive uses 8081, UltraBoss 8082).
+# The port must be open/allocated; if not, the console says so and icons use their text symbols.
+resource-pack:
+  enabled: true
+  mode: internal        # internal | url
+  host: "AUTO"
+  port: 8083
+  url: ""
+  force: false
+  prompt: ""            # empty = the text from the language file

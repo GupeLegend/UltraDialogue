@@ -47,6 +47,18 @@ public final class Conditions {
             if (low.startsWith(pre)) return not != p.hasPermission(s.substring(pre.length()).trim());
         for (String pre : new String[]{"flag:", "marca:"})
             if (low.startsWith(pre)) return not != Flags.has(p, s.substring(pre.length()).trim());
+        for (String pre : new String[]{"has:", "tiene:"})
+            if (low.startsWith(pre)) {
+                Items.Want w = Items.parse(s.substring(pre.length()), 1);
+                return not != (Items.count(p, w.spec()) >= w.amount());
+            }
+        for (String pre : new String[]{"hand:", "mano:"})
+            if (low.startsWith(pre)) {
+                Items.Want w = Items.parse(s.substring(pre.length()), 1);
+                return not != (Items.countInHand(p, w.spec()) >= w.amount());
+            }
+        for (String pre : new String[]{"quest:", "mision:", "misión:"})
+            if (low.startsWith(pre)) return not != quest(p, s.substring(pre.length()).trim());
 
         String t = Text.ph(p, s);
         for (String op : OPS) {
@@ -57,6 +69,34 @@ public final class Conditions {
         }
         UltraDialogue.get().getLogger().warning("Condition not understood: '" + c + "'");
         return false;
+    }
+
+    /**
+     * quest: active <clave>       el jugador esta ahora en la etapa ULTRADIALOGUE de esa clave
+     * quest: completed <id>       termino la mision de BeautyQuests con ese id
+     * quest: started <id>         la tiene empezada y sin terminar
+     * (en español: activa, completada / terminada, en-curso / empezada)
+     * Sin plugin de misiones, todas dan false.
+     */
+    private static boolean quest(Player p, String v) {
+        String[] x = v.split("\\s+", 2);
+        if (x.length < 2) return false;
+        QuestBridge q = UltraDialogue.get().quests();
+        if (q == null) return false;
+        String arg = x[1].trim();
+        switch (x[0].toLowerCase()) {
+            case "active", "activa" -> { return q.active(p, arg); }
+            case "completed", "completada", "terminada" -> { return questId(arg) >= 0 && q.completed(p, questId(arg)); }
+            case "started", "en-curso", "empezada" -> { return questId(arg) >= 0 && q.started(p, questId(arg)); }
+            default -> {
+                UltraDialogue.get().getLogger().warning("Unknown quest condition: 'quest: " + v + "'");
+                return false;
+            }
+        }
+    }
+
+    static int questId(String s) {
+        try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return -1; }
     }
 
     private static boolean compare(String a, String op, String b) {

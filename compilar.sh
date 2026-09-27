@@ -8,7 +8,7 @@ set -e
 cd "$(dirname "$0")"
 
 NOMBRE="UltraDialogue"
-VER="1.1"
+VER="1.1.1"
 MC="26.1.2.build.74-stable"   # API de Paper contra la que se compila
 
 # Paper 26.x esta compilado para Java 25: con un JDK menor javac dice "cannot access Player"
@@ -58,12 +58,16 @@ get "$CENTRAL/com/google/code/gson/gson/2.11.0/gson-2.11.0.jar" "gson-2.11.0.jar
 get "$CENTRAL/org/jetbrains/annotations/26.0.2/annotations-26.0.2.jar" "annotations-26.0.2.jar"
 # Guava: Paper la usa en firmas publicas (Material.getItemAttributes -> Multimap).
 get "$CENTRAL/com/google/guava/guava/33.7.1-jre/guava-33.7.1-jre.jar" "guava.jar"
+# Solo para COMPILAR las integraciones opcionales (hook/bq, hook/papi). No van dentro del jar.
+get "https://cdn.modrinth.com/data/ZbvwkXKZ/versions/JKDAEeVt/beautyquests-2.1.0%2Bbuild.144.jar" "beautyquests-2.1.0-b144.jar"
+get "https://repo.extendedclip.com/releases/me/clip/placeholderapi/2.11.7/placeholderapi-2.11.7.jar" "placeholderapi.jar"
 
 CP=""
 for j in paper-api-26.jar adventure-api-4.26.1.jar adventure-key-4.26.1.jar \
          adventure-text-serializer-legacy-4.26.1.jar adventure-text-minimessage-4.26.1.jar \
          examination-api-1.3.0.jar examination-string-1.3.0.jar bungeecord-chat.jar \
-         luckperms-api.jar gson-2.11.0.jar annotations-26.0.2.jar guava.jar; do
+         luckperms-api.jar gson-2.11.0.jar annotations-26.0.2.jar guava.jar \
+         beautyquests-2.1.0-b144.jar placeholderapi.jar; do
   CP="$CP${CP:+$SEP}$LIB/$j"
 done
 

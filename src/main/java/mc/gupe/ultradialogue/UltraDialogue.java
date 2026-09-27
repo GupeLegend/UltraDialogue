@@ -15,6 +15,8 @@ public final class UltraDialogue extends JavaPlugin {
     private Portraits portraits;
     private Screen screen;
     private Actions actions;
+    private PackManager pack;
+    private QuestBridge quests;
 
     public static UltraDialogue get() { return instance; }
 
@@ -37,9 +39,14 @@ public final class UltraDialogue extends JavaPlugin {
         registry = new Registry(this);
         actions = new Actions(this);
         screen = new Screen(this);
+        hooks();          // antes de leer los dialogos: la validacion necesita saber si hay misiones
         registry.load();
 
         Bukkit.getPluginManager().registerEvents(new Listeners(this), this);
+        // El pack de los iconos (puerto 8083). Si no puede, los iconos salen como simbolos de texto.
+        pack = new PackManager(this);
+        Bukkit.getPluginManager().registerEvents(pack, this);
+        pack.start();
         NpcHook.register(this);
 
         PluginCommand cmd = getCommand("ultradialogue");
@@ -58,6 +65,7 @@ public final class UltraDialogue extends JavaPlugin {
     @Override
     public void onDisable() {
         if (screen != null) screen.closeAll();
+        if (pack != null) pack.stop();
     }
 
     public int reload() {
@@ -73,4 +81,37 @@ public final class UltraDialogue extends JavaPlugin {
     public Portraits portraits() { return portraits; }
     public Screen screen() { return screen; }
     public Actions actions() { return actions; }
+    public PackManager pack() { return pack; }
+    public QuestBridge quests() { return quests; }
+
+    /**
+     * Integraciones que IMPORTAN clases de otro plugin. Cada una vive en su paquete (hook/...) y se
+     * carga por nombre solo si ese plugin esta prendido: si no, la clase nunca se toca y no hay
+     * NoClassDefFoundError. Si algo falla (otra version, Paper no deja ver sus clases), se avisa y
+     * el resto de UltraDialogue sigue igual.
+     */
+    private void hooks() {
+        var pm = Bukkit.getPluginManager();
+        if (pm.isPluginEnabled("BeautyQuests")) {
+            try {
+                quests = (QuestBridge) Class.forName("mc.gupe.ultradialogue.hook.bq.BeautyQuestsHook")
+                        .getConstructor(UltraDialogue.class).newInstance(this);
+                getLogger().info("Hooked into BeautyQuests: stage type ULTRADIALOGUE registered.");
+            } catch (Throwable t) {
+                Throwable c = t.getCause() != null ? t.getCause() : t;
+                getLogger().warning("Could not hook into BeautyQuests (" + c + "). Quest actions and conditions are disabled.");
+                quests = null;
+            }
+        }
+        if (pm.isPluginEnabled("PlaceholderAPI")) {
+            try {
+                Object exp = Class.forName("mc.gupe.ultradialogue.hook.papi.UltraPlaceholders")
+                        .getConstructor(UltraDialogue.class).newInstance(this);
+                exp.getClass().getMethod("register").invoke(exp);
+                getLogger().info("Placeholders registered: %ultradialogue_affinity_<id>%, %ultradialogue_flag_<flag>%");
+            } catch (Throwable t) {
+                getLogger().warning("Could not register the placeholders: " + t);
+            }
+        }
+    }
 }

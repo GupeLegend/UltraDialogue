@@ -1,5 +1,5 @@
 name: UltraDialogue
-version: '1.1'
+version: '1.1.1'
 main: mc.gupe.ultradialogue.UltraDialogue
 api-version: '26.1.2'
 author: Social Studio
@@ -11,7 +11,8 @@ folia-supported: false
 #   PlaceholderAPI -> %placeholders% en textos, acciones y condiciones
 #   DeluxeMenus    -> la accion "menu:"
 #   ViaVersion     -> los clientes < 1.21.6 reciben el dialogo en el chat
-softdepend: [FancyNpcs, PlaceholderAPI, DeluxeMenus, ViaVersion]
+#   BeautyQuests   -> etapa ULTRADIALOGUE, "quest:" en acciones y condiciones
+softdepend: [FancyNpcs, PlaceholderAPI, DeluxeMenus, ViaVersion, BeautyQuests]
 
 commands:
   ultradialogue:
@@ -24,6 +25,7 @@ commands:
       /ud list
       /ud flags <player> [clear [flag]]
       /ud affinity <player> [id] [set|add|reset] [n]
+      /ud icons
 
 permissions:
   ultradialogue.admin:

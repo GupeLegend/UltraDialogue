@@ -41,7 +41,10 @@ nodes:
   menu:
     text: 'How can I help you?'
     answers:
+      # "icon": a built-in icon before the text (/ud icons lists them).
+      # "size": 1 (20px), 2 (98px), 3 (150px) or 4 (204px); or "width: N" for an exact width.
       - text: '&aWhat can you do?'
+        icon: question
         tooltip: '&7Hover text.'
         goto: explanation
 

@@ -51,13 +51,35 @@ public final class Dialogue {
      * cumplan su if) en lugar de {@code text}.
      * {@code show}: si es mayor que 0, de las respuestas que no son {@code always} se muestran
      * solo esa cantidad, elegidas al azar cada vez.
+     * {@code columns}: botones por fila solo en este nodo (0 = los del dialogo o config.yml).
      */
     public record Node(String id, String speaker, String text, List<Variant> variants, List<String> onShow,
-                       List<Answer> answers, String next, int show) {}
+                       List<Answer> answers, String next, int show, int columns) {}
 
     public record Variant(String text, List<String> conditions) {}
 
-    /** Una respuesta del jugador. {@code goTo} lleva a otro nodo; {@code actions} corren antes. */
+    /**
+     * Una respuesta del jugador. {@code goTo} lleva a otro nodo; {@code actions} corren antes.
+     * {@code icon}: nombre de un icono de {@link Icons} (null = sin icono).
+     * {@code width}: ancho del boton en pixeles (0 = el de config.yml).
+     */
     public record Answer(String text, String tooltip, List<String> conditions, String goTo,
-                         List<String> actions, boolean always) {}
+                         List<String> actions, boolean always, String icon, int width) {
+
+        public Answer(String text, String tooltip, List<String> conditions, String goTo,
+                      List<String> actions, boolean always) {
+            this(text, tooltip, conditions, goTo, actions, always, null, 0);
+        }
+    }
+
+    /** size: 1 a 4 -> los anchos de los botones del menu de pausa de Minecraft. */
+    public static int widthForSize(int size) {
+        return switch (size) {
+            case 1 -> 20;    // el cuadradito de "reportar"
+            case 2 -> 98;    // "Opciones...", medio ancho
+            case 3 -> 150;
+            case 4 -> 204;   // "Desconectar", ancho completo
+            default -> 0;
+        };
+    }
 }

@@ -1,5 +1,6 @@
 package mc.gupe.ultradialogue;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -15,6 +16,7 @@ import java.util.Set;
  * /ud list
  * /ud flags <player> [clear [flag]]
  * /ud affinity <player> [id] [set|add|reset] [n]   (el jugador nunca ve este numero)
+ * /ud icons                                        los iconos que se pueden usar, con su nombre
  * Los subcomandos viejos en español (abrir, recargar, lista, marcas, borrar) siguen valiendo.
  */
 public final class Command implements TabExecutor {
@@ -94,13 +96,22 @@ public final class Command implements TabExecutor {
                 s.sendMessage(Text.msg("affinity-show", "{player}", p.getName(), "{id}", id,
                         "{value}", String.valueOf(Affinity.get(p, id))));
             }
+            case "icons", "iconos" -> {
+                Player viewer = s instanceof Player pp ? pp : null;
+                s.sendMessage(Text.msg("icons-header"));
+                for (Icons.Preset ic : Icons.presets()) {
+                    s.sendMessage(Component.textOfChildren(Component.text("  "), Icons.of(viewer, ic.name()),
+                            Text.color(pl.lang().raw("icons-line", "{name}", ic.name(), "{alias}", ic.alias()))));
+                }
+                s.sendMessage(Text.color(pl.lang().raw("icons-footer")));
+            }
             default -> help(s, l);
         }
         return true;
     }
 
     private void help(CommandSender s, String l) {
-        for (String k : new String[]{"help-open", "help-reload", "help-list", "help-flags", "help-affinity"})
+        for (String k : new String[]{"help-open", "help-reload", "help-list", "help-flags", "help-affinity", "help-icons"})
             s.sendMessage(Text.color(pl.lang().raw(k, "{cmd}", l)));
     }
 
@@ -114,7 +125,7 @@ public final class Command implements TabExecutor {
         if (aff && a.length == 2) for (Player p : Bukkit.getOnlinePlayers()) r.add(p.getName());
         if (aff && a.length == 3) for (Dialogue d : pl.registry().all()) r.add(d.id);
         if (aff && a.length == 4) r.addAll(List.of("set", "add", "reset"));
-        if (a.length == 1) r.addAll(List.of("open", "reload", "list", "flags", "affinity"));
+        if (a.length == 1) r.addAll(List.of("open", "reload", "list", "flags", "affinity", "icons"));
         else if (a.length == 2 && open) for (Dialogue d : pl.registry().all()) r.add(d.id);
         else if ((a.length == 3 && open) || (a.length == 2 && flags))
             for (Player p : Bukkit.getOnlinePlayers()) r.add(p.getName());

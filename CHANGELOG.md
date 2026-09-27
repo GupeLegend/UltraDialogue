@@ -1,5 +1,47 @@
 # Changelog — UltraDialogue
 
+## 1.1.1 — 2026-09-26
+
+### Button sizes
+- **`size: 1` to `4`** on any answer: 20, 98, 150 and 204 px, like the pause menu buttons (report,
+  Options, a medium one, Disconnect). Or **`width: N`** for an exact width (1–1024).
+- **`columns:` per node**, so two half-width buttons can sit side by side on one screen only.
+- An answer can have **no text, only an icon** (for `size: 1`).
+
+### Icons
+- **20 built-in pixel-art icons** for answers (`icon: quest`): quest, accept, question, talk, shop,
+  secret, choice, gift, back, exit, staff, gem, sword, heart, skull, chest, key, map, star, book.
+  Nine of them are animated.
+- Drawn inside the text with Minecraft's sprite objects. The plugin **serves the pack itself** on
+  port **8083**; it stacks with other packs.
+- **Text fallback**: players who didn't load the pack (or use an old client) see a coloured symbol
+  (`!`, `✔`, `?`, `$`...) instead of a missing texture. `icons.mode: auto | sprite | text`.
+- **`/ud icons`** lists every icon.
+
+### NPC face
+- Head portraits (`npc`, `player:`, `texture:`) now show as a **2D face** from the skin next to the
+  NPC's name. The 3D head item used before rendered as a dark silhouette.
+
+### Deliveries
+- **`has:` / `hand:`** conditions and **`take:` / `give:`** actions. Items: vanilla material (plain
+  items only), `ultraboss:<id>`, `ultrarevive:<id>`, `pdc:<key>=<value>`, `item_model:<id>`, `name:<text>`.
+- `take:` is **all or nothing**, main hand first; if it fails, the rest of the answer's actions are cut.
+- **Anti-dupe:** an answer's conditions are checked again when it's clicked.
+
+### Quests and story locks
+- Conditions **`quest: completed <id>`**, **`quest: started <id>`**, **`quest: active <key>`**.
+- Actions **`quest: complete <key>`**, **`quest: start <id>`**, **`quest: force <id>`**.
+- New BeautyQuests stage type **`ULTRADIALOGUE`** (also in its in-game editor).
+- **`DialogueSignalEvent`** — a Bukkit event any plugin can listen to.
+- BeautyQuests is optional (`softdepend`); its classes live in `hook/bq` and only load if it's there.
+
+### Placeholders
+- `%ultradialogue_affinity_<id>%` and `%ultradialogue_flag_<flag>%` (PlaceholderAPI, optional).
+
+### Also
+- Spanish keys: `icono`, `tamaño` / `tamano`, `ancho`, `columnas` (per node), `tiene`, `mano`,
+  `quitar`, `dar`, `mision` (`completada`, `en-curso`, `activa`, `completar`, `empezar`, `forzar`).
+
 ## 1.1 — 2026-09-26
 
 ### Affinity

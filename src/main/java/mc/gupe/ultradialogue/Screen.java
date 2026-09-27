@@ -103,8 +103,8 @@ public final class Screen {
         List<Option> options = options(p, s, n);
         String name = n.speaker() != null ? n.speaker() : s.dialogue.name;
         String text = pickText(p, s, n);
-        if (usesChat(p)) chat(p, text, name, options, token);
-        else dialog(p, s, text, name, options, token);
+        if (usesChat(p)) chat(p, Icons.face(p, s.dialogue.portrait, s.texture), text, name, options, token);
+        else dialog(p, s, n, text, name, options, token);
     }
 
     private record Option(Component text, Component tooltip, Dialogue.Answer answer) {}
@@ -128,6 +128,14 @@ public final class Screen {
 
     private static final Random RND = new Random();
 
+    /** Texto del boton con su icono delante. Sin texto, el boton es solo el icono (tamano 1). */
+    private Component label(Player p, Dialogue.Answer a) {
+        Component text = a.text() == null || a.text().isEmpty() ? null : Text.color(p, a.text());
+        if (a.icon() == null) return text == null ? Component.empty() : text;
+        Component icon = Icons.of(p, a.icon());
+        return text == null ? icon : Component.textOfChildren(icon, Component.space(), text);
+    }
+
     private List<Option> options(Player p, Session s, Dialogue.Node n) {
         List<Dialogue.Answer> fixed = new ArrayList<>(), rotating = new ArrayList<>();
         for (Dialogue.Answer a : n.answers()) {
@@ -144,7 +152,7 @@ public final class Screen {
         List<Option> r = new ArrayList<>();
         for (Dialogue.Answer a : n.answers()) {
             if (!fixed.contains(a) && !rotating.contains(a)) continue;
-            r.add(new Option(Text.color(p, a.text()), a.tooltip() == null ? null : Text.color(p, a.tooltip()), a));
+            r.add(new Option(label(p, a), a.tooltip() == null ? null : Text.color(p, a.tooltip()), a));
         }
         // Sin respuestas: "Continuar" si hay next, y si no un "Adios" para poder salir.
         if (r.isEmpty()) {
@@ -156,13 +164,17 @@ public final class Screen {
         return r;
     }
 
-    private void dialog(Player p, Session s, String textRaw, String name, List<Option> options, long token) {
+    private void dialog(Player p, Session s, Dialogue.Node n, String textRaw, String name, List<Option> options, long token) {
         int textWidth = clamp(cfg().getInt("screen.text-width", 260));
         int buttonWidth = clamp(cfg().getInt("screen.button-width", 220));
-        int columns = s.dialogue.columns > 0 ? s.dialogue.columns : cfg().getInt("screen.columns", 1);
+        int columns = n.columns() > 0 ? n.columns()
+                : s.dialogue.columns > 0 ? s.dialogue.columns : cfg().getInt("screen.columns", 1);
 
         Component text = Text.color(p, textRaw);
-        ItemStack head = pl.portraits().of(s.dialogue.portrait, s.texture);
+        // Retrato de cabeza (npc / player: / texture:) = cara 2D junto al nombre. El item 3D de una
+        // cabeza en el cuerpo del dialogo se veia como una silueta oscura, sin la skin.
+        Component face = Icons.face(p, s.dialogue.portrait, s.texture);
+        ItemStack head = face != null ? null : pl.portraits().of(s.dialogue.portrait, s.texture);
         List<DialogBody> body = new ArrayList<>();
         if (head != null) {
             body.add(DialogBody.item(head)
@@ -177,7 +189,8 @@ public final class Screen {
         ClickCallback.Options once = ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(15)).build();
         List<ActionButton> buttons = new ArrayList<>();
         for (Option o : options) {
-            ActionButton.Builder b = ActionButton.builder(o.text()).width(buttonWidth)
+            int w = o.answer().width() > 0 ? o.answer().width() : buttonWidth;
+            ActionButton.Builder b = ActionButton.builder(o.text()).width(w)
                     .action(DialogAction.customClick((view, who) -> click(who, token, o.answer()), once));
             if (o.tooltip() != null) b.tooltip(o.tooltip());
             buttons.add(b.build());
@@ -192,7 +205,8 @@ public final class Screen {
                     .build());
         }
 
-        DialogBase base = DialogBase.builder(Text.color(p, name))
+        Component title = face == null ? Text.color(p, name) : Component.textOfChildren(face, Component.space(), Text.color(p, name));
+        DialogBase base = DialogBase.builder(title)
                 .canCloseWithEscape(cfg().getBoolean("screen.close-with-esc", true))
                 .pause(false)
                 // NONE: al clickear, la pantalla se queda como esta hasta que el servidor la
@@ -207,9 +221,10 @@ public final class Screen {
         p.showDialog(Dialog.create(f -> f.empty().base(base).type(built)));
     }
 
-    private void chat(Player p, String textRaw, String name, List<Option> options, long token) {
+    private void chat(Player p, Component face, String textRaw, String name, List<Option> options, long token) {
         p.sendMessage(Component.empty());
-        p.sendMessage(Text.color(p, pl.lang().raw("chat-header", "{name}", name)));
+        Component header = Text.color(p, pl.lang().raw("chat-header", "{name}", name));
+        p.sendMessage(face == null ? header : Component.textOfChildren(face, Component.space(), header));
         for (String line : textRaw.split("\n")) p.sendMessage(Text.color(p, " " + line));
         String format = pl.lang().raw("chat-option");
         ClickCallback.Options once = ClickCallback.Options.builder().uses(1).lifetime(Duration.ofMinutes(15)).build();
@@ -241,6 +256,15 @@ public final class Screen {
         if (s.npc != null && max > 0 && (!s.npc.getWorld().equals(p.getWorld()) || s.npc.distance(p.getLocation()) > max)) {
             close(p);
             p.sendMessage(Text.msg("too-far"));
+            return;
+        }
+
+        // Anti-duplicacion: las condiciones se miraron al DIBUJAR la pantalla. Si en el medio el
+        // jugador tiro los objetos (o perdio el permiso, la marca...), no se ejecuta nada y se
+        // redibuja el nodo con los botones que de verdad le tocan. Todo en el mismo tick.
+        if (!Conditions.test(p, a.conditions(), s.dialogue.id)) {
+            jumps = 0;
+            show(p, s, s.node);
             return;
         }
 
@@ -278,7 +302,7 @@ public final class Screen {
     private static Boolean hasVia;
 
     // ViaVersion deja entrar clientes anteriores a 1.21.6, que no tienen pantallas de dialogo.
-    private static boolean oldClient(Player p) {
+    public static boolean oldClient(Player p) {
         if (Boolean.FALSE.equals(hasVia)) return false;
         try {
             Object api = Class.forName("com.viaversion.viaversion.api.Via").getMethod("getAPI").invoke(null);

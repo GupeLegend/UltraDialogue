@@ -26,12 +26,17 @@ import java.util.Set;
  *   sound: entity.villager.yes 1 1   (tambien ENTITY_VILLAGER_YES)
  *   flag: name   unflag: name
  *   affinity: +2 / -3 / =10       (tambien "affinity: otro_npc +2"; ver Affinity)
+ *   take: IRON_INGOT 16           quita (todo o nada; si falta, CORTA las acciones siguientes)
+ *   give: IRON_INGOT 16           entrega (formatos de objeto en Items)
+ *   quest: complete <clave>       señal para la etapa ULTRADIALOGUE de BeautyQuests
+ *   quest: start <id>             empieza una mision respetando sus requisitos
+ *   quest: force <id>             la empieza sin mirar requisitos
  *   close
  */
 public final class Actions {
 
     public static final Set<String> TYPES = Set.of("goto", "dialogue", "menu", "command", "console", "message",
-            "broadcast", "actionbar", "title", "sound", "flag", "unflag", "close", "affinity");
+            "broadcast", "actionbar", "title", "sound", "flag", "unflag", "close", "affinity", "take", "give", "quest");
 
     private static final Map<String, String> ALIASES = new HashMap<>();
     static {
@@ -49,6 +54,10 @@ public final class Actions {
         ALIASES.put("desmarcar", "unflag");
         ALIASES.put("cerrar", "close");
         ALIASES.put("afinidad", "affinity");
+        ALIASES.put("quitar", "take");
+        ALIASES.put("dar", "give");
+        ALIASES.put("mision", "quest");
+        ALIASES.put("misión", "quest");
     }
 
     private final UltraDialogue pl;
@@ -107,6 +116,20 @@ public final class Actions {
                     case "flag" -> Flags.set(p, v, true);
                     case "unflag" -> Flags.set(p, v, false);
                     case "close" -> pl.screen().close(p);
+                    case "take" -> {
+                        Items.Want w = Items.parse(v, 1);
+                        if (!Items.take(p, w.spec(), w.amount())) {
+                            // Nunca dar el premio sin haber cobrado: se corta el resto del boton.
+                            p.sendMessage(Text.msg("item-missing"));
+                            return;
+                        }
+                    }
+                    case "give" -> {
+                        Items.Want w = Items.parse(v, 1);
+                        if (!Items.give(p, w.spec(), w.amount()))
+                            pl.getLogger().warning("Cannot give '" + w.spec() + "': use a material, ultraboss:<id> or ultrarevive:<id>.");
+                    }
+                    case "quest" -> quest(p, v);
                     case "affinity" -> {
                         Object[] x = parseAffinity(t[1], s.dialogue.id);
                         if (x == null) { pl.getLogger().warning("Bad affinity action: '" + a + "'"); break; }
@@ -157,6 +180,26 @@ public final class Actions {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private void quest(Player p, String v) {
+        String[] x = v.trim().split("\\s+", 2);
+        if (x.length < 2) return;
+        String op = x[0].toLowerCase(Locale.ROOT);
+        if (op.equals("complete") || op.equals("completar")) {
+            // Un evento Bukkit comun: no hace falta BeautyQuests para dispararlo.
+            Bukkit.getPluginManager().callEvent(new DialogueSignalEvent(p, x[1].trim().toLowerCase(Locale.ROOT)));
+            return;
+        }
+        boolean force = op.equals("force") || op.equals("forzar");
+        if (!force && !op.equals("start") && !op.equals("empezar")) {
+            pl.getLogger().warning("Unknown quest action: 'quest: " + v + "'");
+            return;
+        }
+        QuestBridge q = pl.quests();
+        int id = Conditions.questId(x[1]);
+        if (q == null || id < 0 || !q.start(p, id, force))
+            pl.getLogger().warning("Could not start quest '" + x[1] + "'" + (q == null ? " (BeautyQuests is not installed)" : ""));
     }
 
     private static String noSlash(String c) { return c.startsWith("/") ? c.substring(1) : c; }
