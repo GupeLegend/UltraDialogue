@@ -44,7 +44,7 @@ nodes:
       # "icon": a built-in icon before the text (/ud icons lists them).
       # "size": 1 (20px), 2 (98px), 3 (150px) or 4 (204px); or "width: N" for an exact width.
       - text: '&aWhat can you do?'
-        icon: question
+        icon: story
         tooltip: '&7Hover text.'
         goto: explanation
 
@@ -64,8 +64,68 @@ nodes:
         actions:
           - 'dialogue: merchant'
 
+      - text: '&6Locked answers (1.1.2)'
+        goto: locks
+
+      - text: '&6Free rows: 1-2-2-1 (1.1.2)'
+        goto: rows
+
       - text: '&8Goodbye'
         goto: end
+
+  # 1.1.2: a node with locked answers, Back and a fixed Exit. Try: /ud open example locks
+  locks:
+    # Heading of this screen only (the speaker stays the same).
+    title: '&6The Example''s secrets'
+    text: 'Some of these open up as we become friends.'
+    columns: 2
+    answers:
+      - text: '&aAn easy one'
+        icon: quest side
+        size: 2
+        goto: explanation
+      # "locked": when the "if" fails the answer shows greyed out instead of hidden,
+      # and clicking it only shows this text in the action bar. "locked: true" = default text.
+      - text: '&aA secret'
+        icon: quest riddle
+        size: 2
+        if: 'affinity >= 10'
+        locked: '&7Talk to me a bit more first.'
+        goto: explanation
+      - text: '&aA rumour'
+        icon: story
+        size: 2
+        goto: explanation
+      # "size: 4" in a 2-column screen = moved to the last row, alone and centred.
+      - text: '&7Tell me everything'
+        size: 4
+        goto: explanation
+    # "back" = previous screen, "exit" = fixed button at the very bottom.
+    # Any full answer works too (a "Reward" with its actions).
+    nav:
+      - back
+      - exit
+
+  # 1.1.2: free rows. Minecraft's own grid can't mix a wide row with split rows; "layout" draws
+  # the buttons as clickable text so every row can have its own count. Try: /ud open example rows
+  rows:
+    title: '&6Any shape you want'
+    text: 'One wide, two and two, one wide.'
+    # Buttons per row, top to bottom. Leftover answers go one per row.
+    layout: [1, 2, 2, 1]
+    answers:
+      # Several icons on one button: "quest main" = ! plus the green identifier.
+      - {text: '&fMain quest', icon: quest main, goto: explanation}
+      - {text: '&fSide quest', icon: quest side, goto: explanation}
+      - {text: '&fSide quest', icon: quest side, goto: explanation}
+      - {text: '&fA riddle', icon: quest riddle, if: 'affinity >= 10', locked: '&7Not yet.', goto: explanation}
+      - {text: '&fA story', icon: story, goto: explanation}
+      - {text: '&730% chance of a gift', icon: chance, goto: menu}
+    # With "layout", nav buttons are REAL buttons on one row, in this order.
+    nav:
+      - back
+      - {text: '&eReward', icon: reward, actions: ['message: &eReward claimed!'], goto: rows}
+      - exit
 
   explanation:
     # Another character can take the word in a node.

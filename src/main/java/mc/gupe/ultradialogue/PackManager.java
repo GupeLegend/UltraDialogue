@@ -58,7 +58,7 @@ public final class PackManager implements Listener {
         try {
             data = Files.readAllBytes(zip.toPath());
         } catch (Throwable t) {
-            pl.getLogger().warning("resourcepack.zip not found; icons will use their text symbols.");
+            pl.getLogger().warning("resourcepack.zip not found; buttons will be drawn as [ text ].");
             enabled = false;
             return;
         }
@@ -79,10 +79,10 @@ public final class PackManager implements Listener {
         httpServer = new PackServer();
         try {
             httpServer.start(port, PACK_PATH, data);
-            pl.getLogger().info("Icon pack served at: " + url);
+            pl.getLogger().info("Button pack served at: " + url);
         } catch (Throwable t) {
-            pl.getLogger().warning("Could not open port " + port + " for the icon pack (is it allocated?): "
-                    + t.getMessage() + ". Icons will use their text symbols.");
+            pl.getLogger().warning("Could not open port " + port + " for the button pack (is it allocated?): "
+                    + t.getMessage() + ". Buttons will be drawn as [ text ].");
             enabled = false;
         }
     }

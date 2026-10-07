@@ -1,5 +1,68 @@
 # Changelog — UltraDialogue
 
+## 1.1.2
+
+**Free row layouts, a clean double-frame theme, quest symbols and better navigation.**
+
+For **Paper 26.1.2** with **Java 25**. No client mod required. The RPG button pack is optional.
+
+### Free row layouts
+
+- Added **`layout:` / `filas:`** on a node, for arrangements such as `layout: [1, 2, 2, 1]` or `[3, 1]`.
+- Each row accepts 1–6 options. Answers are placed in order; leftovers get individual rows.
+- These options are **clickable components in the dialogue body**, not a replacement for Minecraft's native button-grid API.
+- Without the button pack, they appear as `[ text ]`. Leave out `layout:` to retain the native grid.
+- **`nav:` becomes one row of real Minecraft buttons** below free-row options: Back, Exit and custom navigation answers can sit side by side.
+- `row-width: full` aligns rows; `fit` and a numeric minimum width are also available. Explicit answer widths can override the shared layout.
+
+### Simple RPG panels
+
+- The default pack-drawn appearance is now **a flat dark background with a double border**: `style: liso`, `border: doble`, `look: filled`.
+- `force: true` applies that same background and border to every layout panel. Native grid/nav controls keep their Minecraft appearance.
+- Frames follow the option's icon colour: main quest green, side quest blue, riddle purple, questions white, rewards yellow, and locked options grey.
+- `border-colors` customises the palette without a new pack. `force-colors: true` uses semantic colours; set it to `false` to preserve explicit per-dialogue colour overrides.
+- Pack panels are **24 pixels tall**. Legacy style IDs/assets remain available for compatibility, but are not the active default theme.
+- `buttons: auto` draws panels only after Minecraft confirms the pack loaded; `text` always uses text. `pack` forces panels for externally delivered packs and assumes the required font is present.
+- The pack is bundled in the JAR. Internal delivery offers it after join, using port **8083** by default; a reachable address/port and client acceptance are still required.
+- The pack darkens Minecraft's in-world menu background. This affects other in-world menus too, not only dialogues; the player's blur setting is unchanged.
+
+### Quest symbols
+
+- Replaced the old 1.1.1 sprite set with **10 named text presets**:
+  - `quest` / `mision`: `!`
+  - `main` / `principal`, `side` / `secundaria`, `riddle` / `acertijo`: `•` in green, blue or purple
+  - `accept` / `aceptar`: `✓`
+  - `back` / `volver`: `«`
+  - `exit` / `salir`: `×`
+  - `reward` / `premio`: `±`
+  - `story` / `cuento`: `♪`
+  - `chance` / `probabilidad`: `%`
+- Combine presets: `icon: quest side` shows a gold `!` and a blue `•`. The last coloured preset chooses the panel frame colour.
+- Symbols need no resource pack. Removed names such as `heart`, `gem`, `gift` and `shop` must be migrated; unknown names are skipped with a warning. Update old icon-only answers so they do not become blank labels.
+
+### Locked answers and navigation
+
+- Added **`locked:`** to answers with `if:`: a failed condition keeps the answer visible in grey rather than hiding it. Clicking it shows a hint/sound, without running its actions.
+- `locked: true` uses the default language text. Locked answers are not randomly rotated out by `show:`.
+- **Back** follows conversation history, including switches between dialogues; on the first screen it closes the talk.
+- **Exit** closes the conversation. Navigation width is configurable with `screen.nav-width`.
+- Added per-node **`title:` / `titulo:` / `título:`** for screen headings.
+- In the native grid, a full-width answer (`size: 4`) is moved to the end. Validation warns about layouts/full-width combinations that cannot form the intended rows.
+- Fixed text-only screens with Exit navigation: they now use a notice dialog instead of an invalid empty action list.
+
+### Presentation limits
+
+Free-row panels have no native hover highlight, and their click area follows the text line rather than the full drawing. The navigation row is native and retains its hover highlight. Custom client fonts/resource packs may affect text alignment.
+
+### Updating from 1.1.1
+
+1. Stop the server, replace the old JAR with **`UltraDialogue-1.1.2.jar`**, and restart using Java 25. Do not replace the plugin's data folder.
+2. Review old icon names. Existing configs/dialogues are preserved; explicit old layout settings can override the new defaults. Copy only the settings you want to change.
+3. If another plugin delivers a merged pack, import the current UltraDialogue ZIP, regenerate that provider's pack, disable UltraDialogue's own delivery, and use `buttons: pack`.
+4. Use `/ud reload` for edited dialogue/configuration files, then close and reopen active conversations. Reload does not cancel existing conversation sessions or restart the pack provider; restart the server after changing pack delivery/port settings.
+
+This release's verified server target is **Paper 26.1.2**. The older-client chat fallback does not imply compatibility with older servers. **Folia is not supported; Bedrock/Geyser is not verified.**
+
 ## 1.1.1 — 2026-09-26
 
 ### Button sizes

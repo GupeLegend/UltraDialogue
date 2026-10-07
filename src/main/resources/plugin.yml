@@ -1,5 +1,5 @@
 name: UltraDialogue
-version: '1.1.1'
+version: '1.1.2'
 main: mc.gupe.ultradialogue.UltraDialogue
 api-version: '26.1.2'
 author: Social Studio

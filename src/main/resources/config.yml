@@ -22,6 +22,63 @@ screen:
   close-with-esc: true
   # Adds a "Goodbye" button under every screen, besides the answers.
   exit-button: false
+  # Width of the nav buttons (back, exit, reward...) of "nav:".
+  nav-width: 64
+  # Answers with "locked:" whose "if" fails show in this colour, and play this sound when clicked.
+  locked-color: '&8'
+  locked-sound: 'block.note_block.bass 0.6 0.8'
+  # Nodes with "layout: [1, 2, 2, 1]" draw their buttons as clickable text rows, so every row can
+  # have a different number of buttons (Minecraft's own grid can't). No resource pack needed.
+  layout:
+    # {text} = the answer. Spaces are added around it so every button in a row is the same width.
+    button-format: '&8[ {text}&8 ]'
+    locked-format: '&8[ {text}&8 ]'
+    # Spaces between two buttons of the same row.
+    gap: 2
+    # Row width: full = every row the same width, like a grid (rows line up)
+    #            fit  = each row only as wide as its text (shorter buttons)
+    #            a number = grid at least that many pixels wide
+    row-width: full
+    # RPG buttons drawn with the plugin's resource pack (served by itself, see resource-pack below).
+    # auto = drawn buttons for players who loaded the pack, "[ text ]" for everyone else
+    # pack = always drawn (if you serve the pack yourself, merged with another one)
+    # text = always "[ text ]"
+    buttons: auto
+    # Flat dark panels with a double border. Legacy themes remain available for compatibility,
+    # but force: true below keeps every dialogue on the same simple theme.
+    # filled = background + chosen border; frame = legacy textured frame mode.
+    look: filled
+    # Block backgrounds (aldea_*, Nether, End...): minimal = the plugin's own hand-drawn design for
+    # that place, one of 16 motifs with that block's colours (default) · vanilla = the real block
+    # texture (legacy/compatibility mode)
+    textures: minimal
+    # Uniform appearance: dark flat background and double border for every dialogue.
+    style: liso
+    # Border: simple, grueso, doble, remaches, tallado, contorno, punteado, esquinas, marco, ninguno
+    border: doble
+    # true = style and border above apply to EVERY dialogue, ignoring their own estilo/borde
+    # (border and fill colours per button still apply).
+    force: true
+    # Use semantic icon colours; ignore per-dialogue border/fill colour overrides.
+    force-colors: true
+    # true = "border" above applies to every dialogue, but each one keeps its own background.
+    force-border: false
+    # Border colour by the button's icon (the LAST icon with a colour wins, so "mision secundaria"
+    # is blue). Any '#RRGGBB'. A dialogue, node or answer can override all of this with
+    # estilo / borde when force is false; colour overrides when force-colors is false.
+    border-colors:
+      default: '#FFFFFF'      # questions (no icon)
+      mision: '#F2B21E'
+      principal: '#4CD964'
+      secundaria: '#4F8BFF'
+      acertijo: '#B36BFF'
+      aceptar: '#4CD964'
+      premio: '#FFD23F'
+      cuento: '#7FD6FF'
+      probabilidad: '#FF9F43'
+      volver: '#C6E86B'
+      salir: '#E04B4B'
+      locked: '#5A5A5A'       # locked answers
 
 # Only right click opens a dialogue. true = left click too.
 left-click: false
@@ -44,16 +101,16 @@ affinity:
   # Most affinity a single conversation can give.
   max-per-talk: 3
 
-# Icons on buttons ("icon: quest") and the 2D face next to the NPC name.
+# Icons on buttons are text symbols since 1.1.2; this only matters for older sprite icons.
 # auto   = pictures for players who loaded the icon pack, text symbols for everyone else
 # sprite = always pictures (use it if you serve the pack yourself, merged with other packs)
-# text   = always text symbols (! ✔ ? $ ...), no pack needed
+# text   = always text symbols (! • ✓ « × ± ♪ %), no pack needed
 icons:
   mode: auto
 
-# The icon pack travels inside the jar and the plugin serves it on its own port.
+# The button pack (RPG buttons for "layout:") travels inside the jar and the plugin serves it on its own port.
 # It stacks with other packs (UltraRevive uses 8081, UltraBoss 8082).
-# The port must be open/allocated; if not, the console says so and icons use their text symbols.
+# The port must be open/allocated; if not, the console says so and buttons fall back to "[ text ]".
 resource-pack:
   enabled: true
   mode: internal        # internal | url

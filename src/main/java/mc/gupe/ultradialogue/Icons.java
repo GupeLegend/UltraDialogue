@@ -22,44 +22,58 @@ import java.util.*;
  */
 public final class Icons {
 
-    public record Preset(String name, String alias, String glyph, String color) {}
+    /** {@code listed}: sale en /ud icons. {@code sprite}: tiene dibujo en el pack (si no, siempre simbolo). */
+    public record Preset(String name, String alias, String glyph, String color, boolean listed, boolean sprite) {}
 
     private static final Map<String, Preset> PRESETS = new LinkedHashMap<>();
     private static final Map<String, String> ALIASES = new HashMap<>();
 
-    private static void add(String name, String alias, String glyph, String color) {
-        Preset p = new Preset(name, alias, glyph, color);
-        PRESETS.put(name, p);
-        ALIASES.put(name, name);
-        ALIASES.put(alias, name);
+    // El juego de simbolos de la 1.1.2: solo texto, se ven igual con o sin pack.
+    private static void symbol(String name, String alias, String glyph, String color) {
+        put(new Preset(name, alias, glyph, color, true, false));
+    }
+
+    private static void put(Preset p) {
+        PRESETS.put(p.name(), p);
+        ALIASES.put(p.name(), p.name());
+        ALIASES.put(p.alias(), p.name());
     }
 
     static {
-        add("mision", "quest", "!", "#F2B21E");
-        add("aceptar", "accept", "✔", "#4CD964");
-        add("pregunta", "question", "?", "#4FC3F7");
-        add("charla", "talk", "☺", "#FFFFFF");
-        add("tienda", "shop", "$", "#55FF55");
-        add("secreto", "secret", "✦", "#B36BFF");
-        add("eleccion", "choice", "✧", "#FF6EC7");
-        add("regalo", "gift", "❖", "#F7A04A");
-        add("volver", "back", "«", "#BDBDBD");
-        add("salir", "exit", "✖", "#E04B4B");
-        add("staff", "admin", "☼", "#E03A3A");
-        add("gema", "gem", "◆", "#C98BFF");
-        add("espada", "sword", "⚔", "#DDE3EE");
-        add("corazon", "heart", "❤", "#E83B4E");
-        add("calavera", "skull", "☠", "#EFE8D8");
-        add("cofre", "chest", "▣", "#C08040");
-        add("llave", "key", "⚷", "#F2C84B");
-        add("mapa", "map", "▤", "#EBD9A6");
-        add("estrella", "star", "★", "#FFD23F");
-        add("libro", "book", "❏", "#A36BD1");
+        // El juego de simbolos (1.1.2). Los 20 iconos de la 1.1.1 se quitaron.
+        symbol("mision", "quest", "!", "#F2B21E");          // hay una mision
+        symbol("principal", "main", "•", "#4CD964");       // identificador: mision primaria
+        symbol("secundaria", "side", "•", "#4F8BFF");      // identificador: mision secundaria
+        symbol("acertijo", "riddle", "•", "#B36BFF");      // identificador: acertijo
+        symbol("aceptar", "accept", "✓", "#4CD964");
+        symbol("volver", "back", "«", "#C6E86B");
+        symbol("salir", "exit", "×", "#E04B4B");
+        symbol("premio", "reward", "±", "#FFD23F");        // premios de la mision
+        symbol("cuento", "story", "♪", "#7FD6FF");         // un relato del NPC para una mision
+        symbol("probabilidad", "chance", "%", "#FF9F43");  // algo puede pasar (o tocar) con cierta probabilidad
     }
 
     private Icons() {}
 
-    public static Collection<Preset> presets() { return PRESETS.values(); }
+    /** Los que se muestran en /ud icons (el juego de simbolos actual). */
+    public static Collection<Preset> presets() {
+        return PRESETS.values().stream().filter(Preset::listed).toList();
+    }
+
+    /** "mision secundaria", "mision+secundaria", "[mision, secundaria]" -> cada nombre. */
+    static List<String> names(String icon) {
+        List<String> r = new ArrayList<>();
+        if (icon == null) return r;
+        for (String s : icon.replace("[", " ").replace("]", " ").split("[\\s,+]+")) if (!s.isBlank()) r.add(s);
+        return r;
+    }
+
+    /** Los nombres de un icono que no existen (para avisar al cargar). */
+    static List<String> unknown(String icon) {
+        List<String> r = new ArrayList<>();
+        for (String s : names(icon)) if (resolve(s) == null) r.add(s);
+        return r;
+    }
 
     /** Nombre oficial del icono (acepta el alias en ingles y tildes). null si no existe. */
     public static String resolve(String name) {
@@ -69,13 +83,31 @@ public final class Icons {
         return ALIASES.get(n);
     }
 
-    /** El icono listo para poner en un texto. Vacio si el nombre no existe. */
+    /** El icono (o los iconos, separados por espacio) listo para poner en un texto. */
     public static Component of(Player p, String name) {
-        String n = resolve(name);
-        if (n == null) return Component.empty();
-        Preset pr = PRESETS.get(n);
-        if (sprites(p)) return Component.object(ObjectContents.sprite(Key.key("ultradialogue", "block/icon/" + n)));
-        return Component.text(pr.glyph(), TextColor.fromHexString(pr.color()));
+        List<Component> parts = new ArrayList<>();
+        for (String s : names(name)) {
+            String n = resolve(s);
+            if (n == null) continue;
+            Preset pr = PRESETS.get(n);
+            if (!parts.isEmpty()) parts.add(Component.space());
+            if (pr.sprite() && sprites(p)) parts.add(Component.object(ObjectContents.sprite(Key.key("ultradialogue", "block/icon/" + n))));
+            else parts.add(Component.text(pr.glyph(), TextColor.fromHexString(pr.color())));
+        }
+        return parts.isEmpty() ? Component.empty() : Component.textOfChildren(parts.toArray(new Component[0]));
+    }
+
+    /** Ancho en pixeles del icono tal como lo va a ver este jugador (sprite o simbolo). */
+    static int width(Player p, String name) {
+        int w = 0, count = 0;
+        for (String s : names(name)) {
+            String n = resolve(s);
+            if (n == null) continue;
+            Preset pr = PRESETS.get(n);
+            w += (pr.sprite() && sprites(p)) ? 9 : Glyphs.width(pr.glyph());
+            if (count++ > 0) w += 4;
+        }
+        return w;
     }
 
     /**
