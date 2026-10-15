@@ -1,5 +1,53 @@
 # Changelog — UltraDialogue
 
+## 1.1.3 — 2026-10-15
+
+**A button editor in `/ud`, a much smaller resource pack, and a cleaner, reorganised codebase.**
+No change to how dialogue files are written or how conversations play out.
+
+### Button editor
+
+- **`/ud` (or `/ud editor`) now opens an in-game menu**: pick a dialogue, pick one of its nodes,
+  and see its buttons (the main answers and the `nav:` row).
+- For each button, admins can **edit its text** (typed in chat, with a cancel step), **change its
+  icon** (only the 10 approved presets, or none), **change its size** (auto/1/2/3/4), **move it up
+  or down** or, on a node using `layout:`, **move it to another row**, and **delete it** with a
+  confirmation step.
+- **Add a button** by picking an existing one as a template — its `goto`, `actions` and conditions
+  are copied, then its text and icon are edited like any other button.
+- **Test** opens the dialogue as it is currently saved; **Save** writes the buttons back to that
+  node's `.yml` file; **Cancel**, or just closing the menu, discards anything unsaved.
+- The editor only ever touches buttons. The NPC's own lines, conditions, actions and affinity are
+  still edited in the dialogue's file, same as before; the menu says so.
+- Saving rewrites only the edited node's `answers:`, `nav:` and `layout:` lines — every other node,
+  every other key, and the rest of the file's comments are left exactly as they were.
+
+### A much smaller resource pack
+
+- The bundled button pack now only ships what's actually used: the **`liso` background and the
+  `doble` border**. The jar dropped from ~570 KB to ~200 KB.
+- Any older style or border name in a dialogue file (or in `config.yml`) still loads without
+  errors: it falls back to `liso`/`doble` with a single, once-per-name console notice instead of a
+  blank or missing-texture button. `resource-pack.textures: vanilla` (block-texture buttons) and
+  the biome-scene panels are gone along with the artwork backing them.
+
+### Its own data folder
+
+- UltraDialogue now keeps its files in the normal **`plugins/UltraDialogue/`** folder instead of
+  the shared `plugins/UltraView/UltraDialogue/` one. Upgrading from a version that used the shared
+  folder moves everything over automatically the first time it starts (logged once), and removes
+  the old `UltraView` folder once it's empty. No server owner action needed.
+
+### Source code reorganised
+
+- The source moved from one flat package into `command`, `config`, `migration`, `model`,
+  `registry`, `gui` (with `gui/editor` for the new menu), `listener`, `pack`, `hook` and `util`,
+  grouped by what each class does.
+- Every identifier, comment and log message is now in English (dialogue files still accept both
+  English and Spanish keys, as always).
+- Added a Gradle (Kotlin DSL) build alongside `compilar.sh`, which no longer depends on a `_libs`
+  folder shared with other plugins — each now downloads into its own `libs/`.
+
 ## 1.1.2
 
 **Free row layouts, a clean double-frame theme, quest symbols and better navigation.**

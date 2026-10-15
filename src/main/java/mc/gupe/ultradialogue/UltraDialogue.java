@@ -1,5 +1,18 @@
 package mc.gupe.ultradialogue;
 
+import mc.gupe.ultradialogue.command.Command;
+import mc.gupe.ultradialogue.config.Lang;
+import mc.gupe.ultradialogue.config.PluginData;
+import mc.gupe.ultradialogue.gui.Portraits;
+import mc.gupe.ultradialogue.gui.Screen;
+import mc.gupe.ultradialogue.gui.editor.EditorManager;
+import mc.gupe.ultradialogue.hook.QuestBridge;
+import mc.gupe.ultradialogue.listener.Listeners;
+import mc.gupe.ultradialogue.listener.NpcHook;
+import mc.gupe.ultradialogue.migration.LegacyMigration;
+import mc.gupe.ultradialogue.pack.PackManager;
+import mc.gupe.ultradialogue.registry.Registry;
+import mc.gupe.ultradialogue.util.Actions;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -9,13 +22,14 @@ public final class UltraDialogue extends JavaPlugin {
 
     private static UltraDialogue instance;
 
-    private UltraView view;
+    private PluginData data;
     private Lang lang;
     private Registry registry;
     private Portraits portraits;
     private Screen screen;
     private Actions actions;
     private PackManager pack;
+    private EditorManager editor;
     private QuestBridge quests;
 
     public static UltraDialogue get() { return instance; }
@@ -23,14 +37,14 @@ public final class UltraDialogue extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
-        view = new UltraView(this);          // primero: todo lo demas escribe ahi
-        Migration.run(this, view);           // antes de cualquier saveResource, o se saltea
+        data = new PluginData(this);          // first: everything else writes into its folder
+        LegacyMigration.run(this, data);       // before any saveResource, or it gets skipped
 
-        view.reload();
-        if (!view.file("dialogues").exists()) {
-            view.saveResource("dialogues/example.yml");
-            view.saveResource("dialogues/merchant.yml");
-            view.saveResource("dialogues/kadir.yml");
+        data.reload();
+        if (!data.file("dialogues").exists()) {
+            data.saveResource("dialogues/example.yml");
+            data.saveResource("dialogues/merchant.yml");
+            data.saveResource("dialogues/kadir.yml");
         }
         lang = new Lang(this);
         lang.load(config().getString("language", "en"));
@@ -39,11 +53,13 @@ public final class UltraDialogue extends JavaPlugin {
         registry = new Registry(this);
         actions = new Actions(this);
         screen = new Screen(this);
-        hooks();          // antes de leer los dialogos: la validacion necesita saber si hay misiones
+        editor = new EditorManager(this);
+        hooks();          // before reading the dialogues: validation needs to know if quests exist
         registry.load();
 
         Bukkit.getPluginManager().registerEvents(new Listeners(this), this);
-        // El pack de los iconos (puerto 8083). Si no puede, los iconos salen como simbolos de texto.
+        Bukkit.getPluginManager().registerEvents(editor, this);
+        // The icon pack (port 8083). If it can't start, icons show as text symbols instead.
         pack = new PackManager(this);
         Bukkit.getPluginManager().registerEvents(pack, this);
         pack.start();
@@ -56,9 +72,9 @@ public final class UltraDialogue extends JavaPlugin {
             cmd.setTabCompleter(c);
         }
 
-        // El plugin privado del que salio este. Con los dos puestos, cada NPC abriria dos charlas.
+        // The private plugin this one replaced. With both installed, every NPC would open two conversations.
         if (Bukkit.getPluginManager().getPlugin("Dialogos") != null) {
-            getLogger().severe("El plugin 'Dialogos' sigue instalado: sacale el jar, UltraDialogue ya lo reemplaza.");
+            getLogger().severe("The 'Dialogos' plugin is still installed: remove its jar, UltraDialogue already replaces it.");
         }
     }
 
@@ -69,26 +85,27 @@ public final class UltraDialogue extends JavaPlugin {
     }
 
     public int reload() {
-        view.reload();
+        data.reload();
         lang.load(config().getString("language", "en"));
         return registry.load();
     }
 
-    public FileConfiguration config() { return view.config(); }
-    public UltraView view() { return view; }
+    public FileConfiguration config() { return data.config(); }
+    public PluginData data() { return data; }
     public Lang lang() { return lang; }
     public Registry registry() { return registry; }
     public Portraits portraits() { return portraits; }
     public Screen screen() { return screen; }
     public Actions actions() { return actions; }
     public PackManager pack() { return pack; }
+    public EditorManager editor() { return editor; }
     public QuestBridge quests() { return quests; }
 
     /**
-     * Integraciones que IMPORTAN clases de otro plugin. Cada una vive en su paquete (hook/...) y se
-     * carga por nombre solo si ese plugin esta prendido: si no, la clase nunca se toca y no hay
-     * NoClassDefFoundError. Si algo falla (otra version, Paper no deja ver sus clases), se avisa y
-     * el resto de UltraDialogue sigue igual.
+     * Integrations that IMPORT another plugin's classes. Each lives in its own package (hook/...)
+     * and is loaded by name only if that plugin is enabled: otherwise its class is never touched
+     * and there is no NoClassDefFoundError. If something fails (a different version, Paper hiding
+     * its classes), it's logged and the rest of UltraDialogue keeps working.
      */
     private void hooks() {
         var pm = Bukkit.getPluginManager();

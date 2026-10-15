@@ -1,25 +1,26 @@
 name: UltraDialogue
-version: '1.1.2'
+version: '1.1.3'
 main: mc.gupe.ultradialogue.UltraDialogue
 api-version: '26.1.2'
 author: Social Studio
 description: NPC dialogue screens with branching answers, conditions and actions - native Minecraft dialogs, no resource pack.
 website: https://modrinth.com/plugin/ultradialogue
 folia-supported: false
-# Todos OPCIONALES. En softdepend para que carguen antes y el puente los encuentre.
-#   FancyNpcs      -> el click en un NPC abre su dialogo
-#   PlaceholderAPI -> %placeholders% en textos, acciones y condiciones
-#   DeluxeMenus    -> la accion "menu:"
-#   ViaVersion     -> los clientes < 1.21.6 reciben el dialogo en el chat
-#   BeautyQuests   -> etapa ULTRADIALOGUE, "quest:" en acciones y condiciones
+# All OPTIONAL. Listed as softdepend so they load first and the hooks can find them.
+#   FancyNpcs      -> clicking an NPC opens its dialogue
+#   PlaceholderAPI -> %placeholders% in texts, actions and conditions
+#   DeluxeMenus    -> the "menu:" action
+#   ViaVersion     -> clients < 1.21.6 get the dialogue in chat instead
+#   BeautyQuests   -> ULTRADIALOGUE stage, "quest:" actions and conditions
 softdepend: [FancyNpcs, PlaceholderAPI, DeluxeMenus, ViaVersion, BeautyQuests]
 
 commands:
   ultradialogue:
-    description: Manage NPC dialogues.
+    description: Manage NPC dialogues and edit their buttons.
     aliases: [ud, dialogue, dialogo]
     permission: ultradialogue.admin
     usage: |
+      /ud [editor]                        open the button editor
       /ud open <id> [player] [node]
       /ud reload
       /ud list
@@ -29,10 +30,10 @@ commands:
 
 permissions:
   ultradialogue.admin:
-    description: Open, reload and manage dialogues.
+    description: Open, reload and manage dialogues, including the button editor.
     default: op
 
-  # Nodo del nombre anterior (el plugin privado "Dialogos"), por compatibilidad.
+  # Node from the plugin's previous name ("Dialogos"), kept for compatibility.
   dialogos.admin:
     default: false
     children: { ultradialogue.admin: true }

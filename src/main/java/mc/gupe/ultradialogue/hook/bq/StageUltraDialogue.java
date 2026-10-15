@@ -21,17 +21,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Etapa de BeautyQuests "ULTRADIALOGUE": se completa cuando un dialogo corre
- * "quest: complete <clave>" (mision: completar) con la misma clave.
+ * BeautyQuests stage "ULTRADIALOGUE": completes when a dialogue runs "quest: complete <key>"
+ * (mision: completar) with the same key.
  *
- * En el archivo de la mision:
+ * In the quest file:
  *   stageType: ULTRADIALOGUE
- *   key: brann_hierro
- *   npc: brann            (opcional, solo para la descripcion)
+ *   key: brann_iron
+ *   npc: brann            (optional, only for the description)
  */
 public class StageUltraDialogue extends AbstractStage {
 
-    /** Todas las etapas de este tipo cargadas ahora, para encontrar las de una clave. */
+    /** Every loaded stage of this type right now, to find the ones matching a key. */
     static final Set<StageUltraDialogue> LOADED = ConcurrentHashMap.newKeySet();
 
     final String key;
@@ -62,22 +62,22 @@ public class StageUltraDialogue extends AbstractStage {
 
     @Override
     public String getDefaultDescription(StageDescriptionPlaceholdersContext context) {
-        return npc == null || npc.isEmpty() ? "Habla con el NPC" : "Habla con " + npc;
+        return npc == null || npc.isEmpty() ? "Talk to the NPC" : "Talk to " + npc;
     }
 
-    /** El jugador esta ahora en esta etapa. */
+    /** The player is currently on this stage. */
     boolean isActive(Player p) {
         return hasApplicableQuester(p);
     }
 
-    /** Llego la señal del dialogo: avanza todas las misiones del jugador que esten en esta etapa. */
+    /** The dialogue's signal arrived: advance every quest of this player that's on this stage. */
     void signal(Player p) {
         if (!hasApplicableQuester(p)) return;
-        // Copia: terminar la etapa cambia la lista mientras se recorre.
+        // Copy: finishing the stage changes the list while it's being iterated.
         for (Quester q : new ArrayList<>(controller.getApplicableQuesters(p))) finishStage(q);
     }
 
-    // ---------------------------------------------------------------- editor dentro del juego
+    // ---------------------------------------------------------------- in-game editor
 
     public static class Creator extends StageCreation<StageUltraDialogue> {
 
@@ -94,15 +94,15 @@ public class StageUltraDialogue extends AbstractStage {
         @Override
         public void setupLine(StageGuiLine line) {
             super.setupLine(line);
-            line.setItem(SLOT_KEY, item(Material.NAME_TAG, "§eClave de la señal",
-                    "§7La misma que usa el diálogo en", "§f  quest: complete <clave>"), e ->
+            line.setItem(SLOT_KEY, item(Material.NAME_TAG, "§eSignal key",
+                    "§7The same one the dialogue uses in", "§f  quest: complete <key>"), e ->
                     new TextEditor<String>(e.getPlayer(), e::reopen, v -> {
                         key = v.toLowerCase(Locale.ROOT);
                         line.refreshItemLoreOptionValue(SLOT_KEY, key);
                         e.reopen();
                     }).start());
-            line.setItem(SLOT_NPC, item(Material.PLAYER_HEAD, "§eNombre del NPC §7(opcional)",
-                    "§7Solo para la descripción:", "§f  \"Habla con <npc>\""), e ->
+            line.setItem(SLOT_NPC, item(Material.PLAYER_HEAD, "§eNPC name §7(optional)",
+                    "§7Only for the description:", "§f  \"Talk to <npc>\""), e ->
                     new TextEditor<String>(e.getPlayer(), e::reopen, v -> {
                         npc = v;
                         line.refreshItemLoreOptionValue(SLOT_NPC, npc);
@@ -113,7 +113,7 @@ public class StageUltraDialogue extends AbstractStage {
         @Override
         public void start(Player p) {
             super.start(p);
-            // Una etapa nueva sin clave no serviria: se pide apenas se crea.
+            // A new stage with no key wouldn't work: it's asked for as soon as it's created.
             new TextEditor<String>(p, context::remove, v -> {
                 key = v.toLowerCase(Locale.ROOT);
                 getLine().refreshItemLoreOptionValue(SLOT_KEY, key);

@@ -20,26 +20,29 @@ uses the button pack bundled with the plugin.
 ## Screenshots from a configured server
 
 <p align="center">
-  <img src="docs/gallery/01-quest-board.png" alt="Quest board with coloured frames" title="Quest board with coloured frames" width="49%">
-  <img src="docs/gallery/02-free-row-layouts.png" alt="Free row layouts" title="Free row layouts" width="49%">
+  <img src="docs/Preview1.png" alt="Quest board with coloured frames" title="Quest board with coloured frames" width="49%">
+  <img src="docs/Preview2.png" alt="Free row layouts" title="Free row layouts" width="49%">
 </p>
 <p align="center">
-  <img src="docs/gallery/03-multi-page-menus.png" alt="Multi-page menus with Back" title="Multi-page menus with Back" width="49%">
-  <img src="docs/gallery/04-coloured-menus.png" alt="Coloured category menus" title="Coloured category menus" width="49%">
+  <img src="docs/Preview3.png" alt="Multi-page menus with Back" title="Multi-page menus with Back" width="49%">
+  <img src="docs/Preview4.png" alt="Coloured category menus" title="Coloured category menus" width="49%">
 </p>
 <p align="center">
-  <img src="docs/gallery/05-confirmations-requirements.png" alt="Confirmations and requirements" title="Confirmations and requirements" width="49%">
-  <img src="docs/gallery/06-grid-locked-entries.png" alt="Grids with locked entries" title="Grids with locked entries" width="49%">
+  <img src="docs/Preview5.png" alt="Confirmations and requirements" title="Confirmations and requirements" width="49%">
+  <img src="docs/Preview6.png" alt="Grids with locked entries" title="Grids with locked entries" width="49%">
 </p>
 
-Each image groups real frames of the same kind of screen. The individual frames are in
-[`docs/screenshots/`](docs/screenshots/). NPCs, the world, quests, Codex content, fonts and other
+Each image groups real frames of the same kind of screen. NPCs, the world, quests, Codex content, fonts and other
 server resource-pack customisations shown here are not supplied with the plugin.
 
 ---
 
 ## Features
 
+- **A button editor in `/ud`** *(1.1.3)*: an in-game menu for admins to pick a dialogue, a node and
+  edit its buttons — text, icon and position — without opening a text editor. It only touches
+  buttons: the NPC's own lines, conditions, actions and affinity are still edited in the file.
+  "Save" writes straight to that node's `answers:`/`nav:`, leaving the rest of the file untouched.
 - **Branching conversations** written in YAML: nodes, answers, and where each answer leads.
 - **Actions on any answer:** go to another node or dialogue, open a menu, run a player or console
   command, send a message / title / action bar, play a sound.
@@ -353,9 +356,13 @@ The active appearance is **simple for all panels**: no biome scenes, no themed t
 flat dark interior and a double frame. The last coloured icon sets the frame colour:
 `icono: mision secundaria` draws a gold `!`, a blue `•`, and a blue frame. Locked panels are grey.
 
-Legacy style IDs and assets remain accepted for compatibility. To restore per-dialogue `style` /
-`border`, set `force: false`; to enable `border-color` / `fill-color` overrides, set
-`force-colors: false`. The default uniform theme needs neither. Native `nav:` buttons are unchanged.
+**The bundled pack is slim** *(1.1.3)*: it only ships the `liso` background and the `doble` border,
+so the jar is a tenth of its previous size. Older style/border names are still accepted in YAML
+(`validFill`/`validBorder` don't flag them as typos), but at render time anything other than
+`liso`/`doble` falls back to them, with a one-line, once-per-name console notice — no missing
+textures, no errors. To restore per-dialogue `style`/`border` (still limited to what the slim pack
+ships), set `force: false`; to enable `border-color`/`fill-color` overrides, set `force-colors:
+false`. The default uniform theme needs neither. Native `nav:` buttons are unchanged.
 
 **How:** the pack adds a font, `ultradialogue:boton`, whose "letters" are button pieces — caps,
 segments of 1 to 128 px and negative spaces. The plugin lays them out to the exact width, draws the
@@ -504,6 +511,7 @@ All administrative commands require `ultradialogue.admin` (op by default). Alias
 
 | Command | |
 |---|---|
+| `/ud` or `/ud editor` | Open the button editor (in-game only; see below) |
 | `/ud open <id> [player] [node]` | Open a dialogue by hand — works from console and from other plugins |
 | `/ud reload` | Reload config, language and every dialogue |
 | `/ud list` | Loaded dialogues and their NPCs |
@@ -512,6 +520,30 @@ All administrative commands require `ultradialogue.admin` (op by default). Alias
 | `/ud icons` | Every icon with its name, drawn the way that player sees them |
 
 Players need no permission to talk to NPCs.
+
+## Button editor (`/ud`)
+
+`/ud` with no arguments (or `/ud editor` explicitly) opens an in-game menu: pick a dialogue, pick
+one of its nodes, and see its buttons — the main answers and the `nav:` row.
+
+For each button you can:
+
+- **Edit its text** — the menu closes, you type the new line in chat (or `cancel` to leave it as
+  it is), and the menu reopens.
+- **Change its icon** — one of the 10 approved presets, or none.
+- **Change its size** — cycles through auto / 1 / 2 / 3 / 4 (right-click to go backwards).
+- **Move it up or down**, or, on a node with `layout:` rows, **move it to another row**.
+- **Delete it**, with a confirmation step.
+- **Add a new one** — pick an existing button as a template (its `goto`, `actions` and conditions
+  are copied as-is), then edit its text and icon.
+
+"Test" opens the dialogue for you as it is currently *saved*; "Save" writes the buttons to the
+dialogue's file (see [Notes for contributors](#notes-for-contributors) for how little of the file
+that touches); "Cancel", or just closing the menu, discards anything not saved yet.
+
+This menu never touches the NPC's own lines, its conditions, actions or affinity — those stay in
+the dialogue's `.yml` file, exactly as documented above. The permission is the same
+`ultradialogue.admin` as every other `/ud` subcommand.
 
 ## Requirements
 
@@ -543,8 +575,10 @@ be visible as a client download failure. In `buttons: auto`, players get panels 
 successful load; refusal/download failure leaves the text presentation. `buttons: pack` instead
 assumes an external pack provider has delivered the font.
 
-Data lives in **`plugins/UltraView/UltraDialogue/`**, the shared folder of the Ultra plugin family.
-Your config and dialogues are never overwritten on update.
+Data lives in **`plugins/UltraDialogue/`**, its own normal Bukkit data folder. Upgrading from a
+version that still used the shared `plugins/UltraView/UltraDialogue/` folder moves everything over
+automatically the first time it starts (logged once; the old folder is removed only once it's
+empty). Your config and dialogues are never overwritten on update.
 
 When you edit a dialogue, run `/ud reload`. If something is wrong the console tells you **which file,
 which node and which reference** is broken. Close and reopen active conversations after reloading
@@ -572,8 +606,9 @@ provider's status. For the plugin's `mode: url`, serve the exact bundled pack by
 computed from the embedded ZIP, not from an arbitrary externally merged pack.
 
 On upgrade, stop the server, replace only the JAR, and restart. Preserve
-`plugins/UltraView/UltraDialogue/` and player data. Existing explicit layout settings can override
-the new defaults. Add/update only the chosen configuration keys; migrate removed icon names.
+`plugins/UltraDialogue/` (or the older `plugins/UltraView/UltraDialogue/`, which 1.1.3 moves over on
+its own) and player data. Existing explicit layout settings can override the new defaults.
+Add/update only the chosen configuration keys; migrate removed icon names.
 
 The bundled pack darkens the background of other in-world menus too; this is not dialogue-only.
 It does not change the player's blur setting. Custom fonts may alter label widths/alignment.
@@ -586,52 +621,70 @@ lookup. Player-name portraits can use asynchronous profile resolution via the se
 
 ## Building
 
-No Gradle, no Maven — just `javac`.
+Either works; both produce the same `UltraDialogue-<version>.jar`.
 
 ```bash
+./gradlew build           # -> build/libs/
+# or
 bash compilar.sh          # -> a nearby Jars/ folder, or build/ when cloned standalone
 ```
 
-Dependencies download to `../_libs/` on first run. You need **JDK 25**: Paper 26 is compiled for
-Java 25. Build this release with JDK 25: the script does not set --release, so a newer JDK
-can increase the bytecode requirement. With an older JDK `javac` fails with a `cannot access Player` error that looks like an
-API problem but isn't.
+Both need **JDK 25**: Paper 26 is compiled for Java 25, and an older JDK fails with a
+`cannot access Player` error that looks like an API problem but isn't. `compilar.sh` downloads its
+dependencies into `./libs/` on first run (not shared with any other plugin); Gradle resolves most
+of them from Maven and only downloads BeautyQuests/PlaceholderAPI into that same `libs/` folder,
+since they aren't published under predictable coordinates for this Paper version.
 
 ## Project layout
 
 ```
 src/main/java/mc/gupe/ultradialogue/
-  UltraDialogue.java    startup and reload
-  UltraView.java        the shared plugins/UltraView/<Plugin>/ folder
-  Migration.java        imports data from the private plugin this one came from
-  Registry.java         reads dialogues/ and validates every reference
-  Dialogue.java         the model: dialogue -> nodes -> answers
-  Screen.java           draws each turn (native dialog or chat) and receives the answer
-  Actions.java          runs actions
-  Conditions.java       evaluates if:
-  Flags.java            per-player flags (PersistentDataContainer)
-  Affinity.java         per-player, per-character affinity and its anti-farming limits
-  Portraits.java        the item next to the text (item: portraits)
-  Icons.java            the 10 named text-symbol presets and the NPC's 2D face
-  PackManager.java      serves the button pack and tracks confirmed loads
-  PackServer.java       the small HTTP server behind it
-  NpcHook.java          the FancyNpcs click, by reflection
-  Listeners.java        entity tags, click cooldown, quit
-  Command.java          /ud
-  Items.java            has / hand / take / give and the item formats
-  QuestBridge.java      what UltraDialogue needs from a quest plugin
-  DialogueSignalEvent   the event behind "quest: complete"
-  hook/bq/              BeautyQuests: the bridge and the ULTRADIALOGUE stage (loaded only if present)
-  hook/papi/            the PlaceholderAPI expansion (loaded only if present)
-  Glyphs.java           width of every character of the Minecraft font (for layout:)
-  Buttons.java          builds the RPG panels from the pack's font
-  Lang.java / Text.java messages, colours, placeholders
+  UltraDialogue.java        startup and reload
+  command/Command.java      /ud, including the button editor's entry point
+  config/
+    PluginData.java         this plugin's own plugins/UltraDialogue/ folder, config.yml, and the
+                             one-time move from the old shared plugins/UltraView/UltraDialogue/
+    Lang.java                lang/{en,es}.yml
+  migration/
+    LegacyMigration.java    imports data from "Dialogos", the private plugin this one came from
+  model/
+    Dialogue.java            the model: dialogue -> nodes -> answers
+    DialogueSignalEvent      the event behind "quest: complete"
+  registry/Registry.java    reads dialogues/ and validates every reference
+  gui/
+    Screen.java              draws each turn (native dialog or chat) and receives the answer
+    Buttons.java             builds the RPG panels from the pack's font
+    Icons.java               the 10 named text-symbol presets and the NPC's 2D face
+    Portraits.java           the item next to the text (item: portraits)
+    editor/                  the /ud button editor: menus, chat capture, and the YAML writer
+      EditorManager.java     opens every menu, keeps each admin's in-memory draft, "Save"/"Cancel"
+      EditorHolder.java      one click-handler array per menu, so there's a single listener
+      DialogueFileEditor.java  writes a node's answers/nav/layout back without touching the rest
+  pack/
+    PackManager.java         serves the button pack and tracks confirmed loads
+    PackServer.java          the small HTTP server behind it
+  listener/
+    NpcHook.java             the FancyNpcs click, by reflection
+    Listeners.java           entity tags, click cooldown, quit
+  hook/
+    QuestBridge.java         what UltraDialogue needs from a quest plugin
+    bq/                      BeautyQuests: the bridge and the ULTRADIALOGUE stage (loaded only if present)
+    papi/                    the PlaceholderAPI expansion (loaded only if present)
+  util/
+    Actions.java             runs actions
+    Conditions.java          evaluates if:
+    Items.java               has / hand / take / give and the item formats
+    Affinity.java            per-player, per-character affinity and its anti-farming limits
+    Flags.java               per-player flags (PersistentDataContainer)
+    Glyphs.java              width of every character of the Minecraft font (for layout:)
+    Text.java                messages, colours, placeholders
 
 src/main/resources/
   config.yml
   lang/{en,es}.yml
   dialogues/{example,merchant,kadir}.yml
-  resourcepack.zip           the RPG button pack (built by TexturePacks/UltraDialogue/generar_pack.py)
+  resourcepack.zip           the slim RPG button pack: only "liso" + "doble" (built by
+                             TexturePacks/UltraDialogue/pack_solo_en_uso.py)
   glyph-widths.bin           width of every character of the Minecraft font, in half pixels
 ```
 
@@ -671,14 +724,21 @@ up by name, so the plugin compiles and starts without them. `NpcHook` uses the F
 signatures; if a future version changes them, the console says so and NPCs fall back to their normal
 actions.
 
+**The button editor keeps its edits in memory until "Save".** `EditorManager` builds one
+`NodeDraft` per admin from the loaded `Dialogue`; every click in the menu only changes that draft.
+`DialogueFileEditor.save()` is the only place that touches disk: it finds the node by indentation
+(not with `YamlConfiguration`, which drops every comment) and replaces just its `answers:`, `nav:`
+and `layout:` lines. Everything else in the file - every other node, every comment - is passed
+through untouched.
+
 **The flag key carries the plugin name.** `new NamespacedKey(plugin, "flags")` is stored as
 `ultradialogue:flags`. This plugin started as a private one called "Dialogos", so `Flags` still reads
 `dialogos:marcas` and moves it over. Don't remove that bridge.
 
 **Both English and Spanish keys are accepted** in dialogue files (`text`/`texto`, `goto`/`ir`,
-`answers`/`respuestas`…), so the private plugin's files load untouched.
-
-Code comments are written in Spanish.
+`answers`/`respuestas`…), so the private plugin's files load untouched. That bilingual support is
+only for the *keys* inside a dialogue file; the code itself (identifiers, comments, log messages)
+is in English.
 
 ## License
 

@@ -4,9 +4,9 @@ import fr.skytasul.quests.api.QuestsAPI;
 import fr.skytasul.quests.api.questers.Quester;
 import fr.skytasul.quests.api.quests.Quest;
 import fr.skytasul.quests.api.stages.StageType;
-import mc.gupe.ultradialogue.DialogueSignalEvent;
-import mc.gupe.ultradialogue.QuestBridge;
 import mc.gupe.ultradialogue.UltraDialogue;
+import mc.gupe.ultradialogue.hook.QuestBridge;
+import mc.gupe.ultradialogue.model.DialogueSignalEvent;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,11 +17,11 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.Optional;
 
 /**
- * Puente con BeautyQuests 2.1. SOLO se instancia (por nombre, desde UltraDialogue) si BeautyQuests
- * esta prendido: es la unica clase, junto con StageUltraDialogue, que importa clases suyas.
+ * Bridge to BeautyQuests 2.1. ONLY instantiated (by name, from UltraDialogue) if BeautyQuests is
+ * enabled: it is, together with StageUltraDialogue, the only class that imports its classes.
  *
- * ⚠ La etapa se registra en onEnable: BeautyQuests carga las misiones un tick DESPUES de que todos
- * los plugins se habilitaron. Registrada mas tarde, las misiones que la usan fallarian al cargar.
+ * The stage is registered in onEnable: BeautyQuests loads its quests one tick AFTER every plugin
+ * has enabled. Registered any later, quests using this stage would fail to load.
  */
 public final class BeautyQuestsHook implements QuestBridge, Listener {
 
@@ -53,7 +53,7 @@ public final class BeautyQuestsHook implements QuestBridge, Listener {
         return QuestsAPI.getAPI().getQuestsManager().getQuest(id);
     }
 
-    /** El "quester" que usa ESA mision para este jugador (personal o de grupo, segun la mision). */
+    /** The "quester" that THIS quest uses for this player (solo or group, depending on the quest). */
     private static Optional<? extends Quester> quester(Quest q, Player p) {
         return q == null ? Optional.empty() : q.getQuesterStrategy().getPlayerQuester(p);
     }
@@ -75,7 +75,7 @@ public final class BeautyQuestsHook implements QuestBridge, Listener {
         Quest q = quest(id);
         if (q == null) return false;
         if (!force) {
-            q.attemptStart(p);   // respeta requisitos, limite de misiones, etc.
+            q.attemptStart(p);   // respects requirements, quest limits, etc.
             return true;
         }
         Optional<? extends Quester> qs = quester(q, p);

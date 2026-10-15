@@ -44,17 +44,11 @@ screen:
     # pack = always drawn (if you serve the pack yourself, merged with another one)
     # text = always "[ text ]"
     buttons: auto
-    # Flat dark panels with a double border. Legacy themes remain available for compatibility,
-    # but force: true below keeps every dialogue on the same simple theme.
-    # filled = background + chosen border; frame = legacy textured frame mode.
+    # Flat dark panels with a double border. filled = background + border; frame = the border
+    # texture only on the edge, liso inside. The slim pack only ships "liso" + "doble": any other
+    # style or border set here, or by a dialogue, falls back to those (one console notice per name).
     look: filled
-    # Block backgrounds (aldea_*, Nether, End...): minimal = the plugin's own hand-drawn design for
-    # that place, one of 16 motifs with that block's colours (default) · vanilla = the real block
-    # texture (legacy/compatibility mode)
-    textures: minimal
-    # Uniform appearance: dark flat background and double border for every dialogue.
     style: liso
-    # Border: simple, grueso, doble, remaches, tallado, contorno, punteado, esquinas, marco, ninguno
     border: doble
     # true = style and border above apply to EVERY dialogue, ignoring their own estilo/borde
     # (border and fill colours per button still apply).
@@ -101,10 +95,11 @@ affinity:
   # Most affinity a single conversation can give.
   max-per-talk: 3
 
-# Icons on buttons are text symbols since 1.1.2; this only matters for older sprite icons.
+# Icons on buttons are text symbols (! • ✓ « × ± ♪ %), not pictures, so this only matters if you
+# ever add your own sprite icon.
 # auto   = pictures for players who loaded the icon pack, text symbols for everyone else
 # sprite = always pictures (use it if you serve the pack yourself, merged with other packs)
-# text   = always text symbols (! • ✓ « × ± ♪ %), no pack needed
+# text   = always text symbols, no pack needed
 icons:
   mode: auto
 
