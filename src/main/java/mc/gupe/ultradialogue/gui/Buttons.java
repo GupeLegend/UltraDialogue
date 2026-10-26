@@ -54,7 +54,7 @@ public final class Buttons {
 
     /** Whether this player gets the pack-drawn buttons (otherwise they show as "[ text ]"). */
     public static boolean enabled(Player p) {
-        if (p == null || Screen.oldClient(p)) return false;
+        if (p == null || Screen.oldClient(p) || mc.gupe.ultradialogue.pack.PackManager.bedrock(p)) return false;
         String mode = UltraDialogue.get().config().getString("screen.layout.buttons", "auto").toLowerCase(Locale.ROOT);
         if (mode.equals("text")) return false;
         if (mode.equals("pack")) return true;

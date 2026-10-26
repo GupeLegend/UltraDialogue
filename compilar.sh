@@ -8,7 +8,7 @@ set -e
 cd "$(dirname "$0")"
 
 NAME="UltraDialogue"
-VER="1.1.3"
+VER="1.1.4"
 MC="26.1.2.build.74-stable"   # Paper API version this is compiled against
 
 # Paper 26.x is built for Java 25: an older JDK fails with "cannot access Player" and looks like

@@ -1,5 +1,6 @@
 package mc.gupe.ultradialogue;
 
+import mc.gupe.ultradialogue.util.Tasks;
 import mc.gupe.ultradialogue.command.Command;
 import mc.gupe.ultradialogue.config.Lang;
 import mc.gupe.ultradialogue.config.PluginData;
@@ -10,13 +11,21 @@ import mc.gupe.ultradialogue.hook.QuestBridge;
 import mc.gupe.ultradialogue.listener.Listeners;
 import mc.gupe.ultradialogue.listener.NpcHook;
 import mc.gupe.ultradialogue.migration.LegacyMigration;
+import mc.gupe.ultradialogue.pack.PackInstaller;
 import mc.gupe.ultradialogue.pack.PackManager;
 import mc.gupe.ultradialogue.registry.Registry;
 import mc.gupe.ultradialogue.util.Actions;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public final class UltraDialogue extends JavaPlugin {
 
@@ -32,11 +41,24 @@ public final class UltraDialogue extends JavaPlugin {
     private EditorManager editor;
     private QuestBridge quests;
 
+    private PackInstaller.Result packInstall = PackInstaller.Result.NONE;
+
     public static UltraDialogue get() { return instance; }
+
+    @Override
+    public void onLoad() {
+        // Before the pack plugins start (plugin.yml: loadbefore), so they build their pack with the
+        // buttons already inside on this same boot.
+        // Only 'install' decides. Older configs still have resource-pack.enabled: false, which meant
+        // "don't send the pack yourself", not "don't install it": ignored on purpose.
+        FileConfiguration c = bootConfig();
+        packInstall = PackInstaller.install(this, c.getString("resource-pack.install"), c.getBoolean("resource-pack.merged-by-hand"));
+    }
 
     @Override
     public void onEnable() {
         instance = this;
+        Tasks.init(this);
         data = new PluginData(this);          // first: everything else writes into its folder
         LegacyMigration.run(this, data);       // before any saveResource, or it gets skipped
 
@@ -59,10 +81,19 @@ public final class UltraDialogue extends JavaPlugin {
 
         Bukkit.getPluginManager().registerEvents(new Listeners(this), this);
         Bukkit.getPluginManager().registerEvents(editor, this);
-        // The icon pack (port 8083). If it can't start, icons show as text symbols instead.
-        pack = new PackManager(this);
+        // CraftEngine sends its pack while the player is still connecting: no status reaches us.
+        pack = new PackManager(packInstall.plugin() != null || config().getBoolean("resource-pack.merged-by-hand"),
+                "CraftEngine".equals(packInstall.plugin()));
         Bukkit.getPluginManager().registerEvents(pack, this);
-        pack.start();
+        if (packInstall.rebuild() != null) {
+            // That plugin had already started, or only builds its pack on command: once every
+            // plugin is up, ask it to rebuild with the buttons inside.
+            String rebuild = packInstall.rebuild();
+            Bukkit.getGlobalRegionScheduler().execute(this, () -> {
+                getLogger().info("Rebuilding the server resource pack: /" + rebuild);
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), rebuild);
+            });
+        }
         NpcHook.register(this);
 
         PluginCommand cmd = getCommand("ultradialogue");
@@ -81,13 +112,22 @@ public final class UltraDialogue extends JavaPlugin {
     @Override
     public void onDisable() {
         if (screen != null) screen.closeAll();
-        if (pack != null) pack.stop();
     }
 
     public int reload() {
         data.reload();
         lang.load(config().getString("language", "en"));
         return registry.load();
+    }
+
+    /** config.yml as the server has it, over the jar's defaults, without writing anything: in onLoad
+     *  the old-folder migration hasn't run yet and must find the folder untouched. */
+    private FileConfiguration bootConfig() {
+        YamlConfiguration c = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "config.yml"));
+        try (InputStream in = getResource("config.yml")) {
+            if (in != null) c.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)));
+        } catch (IOException ignored) {}
+        return c;
     }
 
     public FileConfiguration config() { return data.config(); }

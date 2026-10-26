@@ -2,8 +2,8 @@
 
 # UltraDialogue
 
-[![Minecraft](https://img.shields.io/badge/Minecraft-26.1.2-brightgreen)](https://papermc.io)
-[![Paper](https://img.shields.io/badge/Paper-26.1.2-blue)](https://papermc.io)
+[![Minecraft](https://img.shields.io/badge/Minecraft-26.1%20%E2%80%93%2026.3-brightgreen)](https://papermc.io)
+[![Platforms](https://img.shields.io/badge/Paper%20%C2%B7%20Purpur%20%C2%B7%20Folia-26.1%20%E2%80%93%2026.3-blue)](https://papermc.io)
 [![Java](https://img.shields.io/badge/Java-25-orange)](https://adoptium.net)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
@@ -13,9 +13,9 @@ answers as buttons. Every answer can branch the conversation, open a menu or run
 A Paper plugin by **Social Studio**.
 
 It uses the **native dialog screens** Minecraft introduced in client version 1.21.6. The
-verified server target for this JAR is **Paper 26.1.2 / Java 25**. No client mod is required.
+same JAR runs on **Paper 26.1, 26.2 and 26.3 / Java 25**. No client mod is required.
 Native buttons and plain free-row text need no resource pack; the optional RPG panel appearance
-uses the button pack bundled with the plugin.
+uses the button pack bundled with the plugin, which it installs in your server's pack plugin.
 
 ## Screenshots from a configured server
 
@@ -30,6 +30,10 @@ uses the button pack bundled with the plugin.
 <p align="center">
   <img src="docs/Preview5.png" alt="Confirmations and requirements" title="Confirmations and requirements" width="49%">
   <img src="docs/Preview6.png" alt="Grids with locked entries" title="Grids with locked entries" width="49%">
+</p>
+<p align="center">
+  <img src="docs/Preview7.png" alt="The example dialogue with RPG buttons" title="The example dialogue with RPG buttons" width="49%">
+  <img src="docs/Preview8.png" alt="The /ud button editor" title="The /ud button editor" width="49%">
 </p>
 
 Each image groups real frames of the same kind of screen. NPCs, the world, quests, Codex content, fonts and other
@@ -240,9 +244,8 @@ marker. `[quest, side]` and `quest+side` work too.
 
 > **1.1.2 replaced the 20 pixel-art icons of 1.1.1** (`heart`, `gem`, `gift`, `star`, `shop`…). An icon
 > that no longer exists doesn't break anything: the button shows without it and the console warns once
-> per dialogue. Text symbols need no pack. `resource-pack.enabled: false` disables the internal
-> button-pack server/public-IP lookup; use it for text-only presentation or when another plugin
-> delivers a merged pack. Update removed icon-only answers so their labels are not blank.
+> per dialogue. Text symbols need no pack. Update removed icon-only answers so their labels are not
+> blank.
 
 **The NPC's face:** portraits `npc`, `player:Name` and `texture:...` now show as a 2D face from the
 skin, next to the NPC's name. The client renders the face; player-name portraits can also use
@@ -367,7 +370,8 @@ false`. The default uniform theme needs neither. Native `nav:` buttons are uncha
 **How:** the pack adds a font, `ultradialogue:boton`, whose "letters" are button pieces — caps,
 segments of 1 to 128 px and negative spaces. The plugin lays them out to the exact width, draws the
 border on top (tinted with the text colour, so any colour works without touching the pack) and
-centres the label. The pack is served by the plugin on port 8083 and stacks with other packs.
+centres the label. The plugin never sends the pack itself: it installs it in your server's pack
+plugin (see [Pack delivery](#pack-delivery-and-updates)).
 
 Buttons are 24 px tall (the background inside a 4 px frame). `row-width: full | fit | <px>` chooses
 between rows that line up and rows as wide as their text. The pack also darkens Minecraft's in-world
@@ -549,11 +553,13 @@ the dialogue's `.yml` file, exactly as documented above. The permission is the s
 
 | | |
 |---|---|
-| **Paper** | 26.1.2 (verified server target) |
+| **Server** | Paper, Purpur or Folia, on 26.1, 26.2 or 26.3 (one JAR, built against 26.1.2) |
 | **Java** | 25 |
 
 The older-client ViaVersion fallback does not imply support for older servers.
-**Folia is not supported. Bedrock/Geyser behaviour is not verified.**
+Bedrock players (Geyser + Floodgate) see the dialogues as Bedrock forms:
+they always get the text buttons, and `layout:` rows become normal buttons for them, since text in
+a form can't be clicked.
 
 Everything else is optional and detected at runtime:
 
@@ -564,16 +570,17 @@ Everything else is optional and detected at runtime:
 | DeluxeMenus | The `menu:` action (any menu plugin works — change `menu-command`) |
 | ViaVersion | Sends old clients the chat version |
 | BeautyQuests 2.1 | Quest conditions and actions, the `ULTRADIALOGUE` stage type |
+| Floodgate | Knowing who plays on Bedrock (text buttons, rows as buttons) |
+| ResourcePackManager, Nexo, Oraxen, ItemsAdder, CraftEngine or EcoItems | Where the button pack is installed |
 
 ## Install
 
 Drop the jar in `plugins/` and start the server. Three example dialogues are created.
 
-Symbols do not need a pack. For internally served RPG panels, configure a reachable public
-address and port (**8083** by default). A bind failure is logged, but a firewall/NAT block may only
-be visible as a client download failure. In `buttons: auto`, players get panels only after a
-successful load; refusal/download failure leaves the text presentation. `buttons: pack` instead
-assumes an external pack provider has delivered the font.
+Symbols do not need a pack. For the RPG panels, the plugin installs its button pack in the plugin
+that builds your server's pack (see below). In `buttons: auto`, a player gets panels once the
+server's pack has loaded on their client; refusal or a failed download leaves the text
+presentation. `buttons: pack` always draws them.
 
 Data lives in **`plugins/UltraDialogue/`**, its own normal Bukkit data folder. Upgrading from a
 version that still used the shared `plugins/UltraView/UltraDialogue/` folder moves everything over
@@ -582,28 +589,40 @@ empty). Your config and dialogues are never overwritten on update.
 
 When you edit a dialogue, run `/ud reload`. If something is wrong the console tells you **which file,
 which node and which reference** is broken. Close and reopen active conversations after reloading
-their definitions: `/ud reload` does not cancel existing sessions. Pack delivery/port changes
-require a server restart; reload does not restart the pack provider.
+their definitions: `/ud reload` does not cancel existing sessions. `resource-pack` changes need a
+server restart.
 
 ---
 
 ## Pack delivery and updates
 
-For an external provider such as EcoItems, merge the current UltraDialogue ZIP, regenerate that
-provider's pack and configure:
+UltraDialogue **doesn't send resource packs to players** and opens no port. On startup, before the
+other plugins start, it puts its button pack inside the plugin that builds your server's pack, so
+players keep getting a single pack:
+
+| Plugin | Where the pack goes |
+|---|---|
+| ResourcePackManager | `mixer/UltraDialoguePack.zip` |
+| Nexo | `pack/external_packs/UltraDialoguePack.zip` |
+| Oraxen | `pack/uploads/UltraDialoguePack.zip` |
+| ItemsAdder | `contents/ultradialogue/resourcepack/` (then `/iazip` once the server is up) |
+| CraftEngine | `resources/ultradialogue/` (then `/ce reload pack` once the server is up) |
+| EcoItems | `pack/imports/UltraDialoguePack.zip` |
+
+With several installed, the first in that order wins. It only writes when the pack changed.
+Tested with EcoItems, ResourcePackManager and CraftEngine; Nexo, Oraxen and ItemsAdder follow their
+documentation.
 
 ```yaml
 resource-pack:
-  enabled: false
-screen:
-  layout:
-    buttons: pack
+  install: auto          # auto · none · or one plugin's name, e.g. EcoItems
+  merged-by-hand: false  # true = you added the pack to your own server pack yourself
 ```
 
-Merge these settings into the existing config; do not replace the whole file or duplicate its
-`screen:` section. `buttons: pack` assumes the font is present and cannot confirm an external
-provider's status. For the plugin's `mode: url`, serve the exact bundled pack bytes: its hash is
-computed from the embedded ZIP, not from an arbitrary externally merged pack.
+**No pack plugin?** The ZIP is left in `plugins/UltraDialogue/resourcepack/` with a README, and the
+console warns about it. Add its `assets` to your own pack (or host the ZIP and set `resource-pack`
+in `server.properties`), then set `merged-by-hand: true`. The free
+[ResourcePackManager](https://modrinth.com/plugin/resourcepackmanager) does all of this for you.
 
 On upgrade, stop the server, replace only the JAR, and restart. Preserve
 `plugins/UltraDialogue/` (or the older `plugins/UltraView/UltraDialogue/`, which 1.1.3 moves over on
@@ -615,9 +634,8 @@ It does not change the player's blur setting. Custom fonts may alter label width
 
 ## Network use
 
-Internal delivery serves the ZIP over HTTP on the configured port. `host: AUTO` queries
-`api.ipify.org` for the public IP; `resource-pack.enabled: false` disables the provider and that
-lookup. Player-name portraits can use asynchronous profile resolution via the server API.
+The plugin makes no network connections of its own. Player-name portraits can use asynchronous
+profile resolution via the server API.
 
 ## Building
 
@@ -661,8 +679,8 @@ src/main/java/mc/gupe/ultradialogue/
       EditorHolder.java      one click-handler array per menu, so there's a single listener
       DialogueFileEditor.java  writes a node's answers/nav/layout back without touching the rest
   pack/
-    PackManager.java         serves the button pack and tracks confirmed loads
-    PackServer.java          the small HTTP server behind it
+    PackInstaller.java       installs the button pack in the server's pack plugin
+    PackManager.java         tracks who loaded the server's pack (and who is on Bedrock)
   listener/
     NpcHook.java             the FancyNpcs click, by reflection
     Listeners.java           entity tags, click cooldown, quit

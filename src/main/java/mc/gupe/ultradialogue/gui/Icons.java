@@ -117,7 +117,7 @@ public final class Icons {
      * Old clients never get sprites: they don't know the "object" component.
      */
     public static boolean sprites(Player p) {
-        if (p == null || Screen.oldClient(p)) return false;
+        if (p == null || Screen.oldClient(p) || PackManager.bedrock(p)) return false;
         String mode = UltraDialogue.get().config().getString("icons.mode", "auto").toLowerCase(Locale.ROOT);
         if (mode.equals("text")) return false;
         if (mode.equals("sprite")) return true;

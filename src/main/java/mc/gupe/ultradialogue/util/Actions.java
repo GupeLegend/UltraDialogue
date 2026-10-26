@@ -210,6 +210,6 @@ public final class Actions {
     private static String noSlash(String c) { return c.startsWith("/") ? c.substring(1) : c; }
 
     private static void console(String c) {
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), c);
+        Tasks.console(c);
     }
 }

@@ -1,5 +1,6 @@
 package mc.gupe.ultradialogue.gui.editor;
 
+import mc.gupe.ultradialogue.util.Tasks;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import mc.gupe.ultradialogue.UltraDialogue;
 import mc.gupe.ultradialogue.gui.Icons;
@@ -153,7 +154,7 @@ public final class EditorManager implements Listener {
 
     private void test(Player p, Dialogue d, String nodeId) {
         p.closeInventory();
-        Bukkit.getScheduler().runTask(pl, () -> pl.screen().open(p, d, nodeId, null, null));
+        Tasks.later(p, () -> pl.screen().open(p, d, nodeId, null, null));
     }
 
     // ------------------------------------------------------------------------------ button list
@@ -485,7 +486,7 @@ public final class EditorManager implements Listener {
         // Moving from one editor menu to the next also fires this event for the menu being left
         // behind, so this only reacts once nothing editor-related is open a tick later: either the
         // player is mid chat-capture (pending != null) or really closed the inventory for good.
-        Bukkit.getScheduler().runTask(pl, () -> {
+        Tasks.later(p, () -> {
             if (pending.containsKey(p.getUniqueId())) return;
             if (p.getOpenInventory().getTopInventory().getHolder() instanceof EditorHolder) return;
             NodeDraft draft = drafts.remove(p.getUniqueId());
@@ -500,7 +501,7 @@ public final class EditorManager implements Listener {
         e.setCancelled(true);
         String text = plain(LegacyComponentSerializer.legacyAmpersand().serialize(e.message()));
         pending.remove(e.getPlayer().getUniqueId());
-        Bukkit.getScheduler().runTask(pl, () -> {
+        Tasks.later(e.getPlayer(), () -> {
             if (text.trim().equalsIgnoreCase("cancel") || text.trim().equalsIgnoreCase("cancelar")) capture.onCancel().run();
             else capture.onInput().accept(text);
         });
@@ -550,12 +551,13 @@ public final class EditorManager implements Listener {
         it.setItemMeta(meta);
     }
 
+    // lore lines come from the language file, so they can carry their own &-colours
     private Component dim(String s) {
-        return Component.text(s, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false);
+        return Text.color(s).colorIfAbsent(NamedTextColor.GRAY);
     }
 
     private Component hint(String s) {
-        return Component.text(s, NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false);
+        return Text.color(s).colorIfAbsent(NamedTextColor.DARK_GRAY);
     }
 
     private static String plain(String raw) {

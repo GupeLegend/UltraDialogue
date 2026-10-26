@@ -39,9 +39,10 @@ screen:
     #            fit  = each row only as wide as its text (shorter buttons)
     #            a number = grid at least that many pixels wide
     row-width: full
-    # RPG buttons drawn with the plugin's resource pack (served by itself, see resource-pack below).
-    # auto = drawn buttons for players who loaded the pack, "[ text ]" for everyone else
-    # pack = always drawn (if you serve the pack yourself, merged with another one)
+    # RPG buttons drawn with the plugin's resource pack (see resource-pack below).
+    # auto = drawn buttons for players who loaded the server's pack with the buttons inside,
+    #        "[ text ]" for everyone else
+    # pack = always drawn (only if EVERY player is sure to have the buttons)
     # text = always "[ text ]"
     buttons: auto
     # Flat dark panels with a double border. filled = background + border; frame = the border
@@ -97,20 +98,20 @@ affinity:
 
 # Icons on buttons are text symbols (! • ✓ « × ± ♪ %), not pictures, so this only matters if you
 # ever add your own sprite icon.
-# auto   = pictures for players who loaded the icon pack, text symbols for everyone else
-# sprite = always pictures (use it if you serve the pack yourself, merged with other packs)
+# auto   = pictures for players who loaded the server's pack with the buttons inside, text symbols for everyone else
+# sprite = always pictures (only if EVERY player is sure to have the pack)
 # text   = always text symbols, no pack needed
 icons:
   mode: auto
 
-# The button pack (RPG buttons for "layout:") travels inside the jar and the plugin serves it on its own port.
-# It stacks with other packs (UltraRevive uses 8081, UltraBoss 8082).
-# The port must be open/allocated; if not, the console says so and buttons fall back to "[ text ]".
+# The button pack (the RPG buttons for "layout:") travels inside the jar. UltraDialogue doesn't send
+# packs to players: on startup it puts the buttons inside the plugin that builds your server's pack,
+# so players keep getting a single pack.
+#   install: auto = the first one installed of: ResourcePackManager, Nexo, Oraxen, ItemsAdder, CraftEngine, EcoItems
+#            a plugin's name (for example EcoItems) = only that one
+#            none = do nothing
+# With none of them installed, the pack is left in plugins/UltraDialogue/resourcepack/ with a README,
+# and buttons show as "[ text ]" until you add it to your own pack and set merged-by-hand: true.
 resource-pack:
-  enabled: true
-  mode: internal        # internal | url
-  host: "AUTO"
-  port: 8083
-  url: ""
-  force: false
-  prompt: ""            # empty = the text from the language file
+  install: auto
+  merged-by-hand: false

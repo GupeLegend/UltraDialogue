@@ -1,5 +1,6 @@
 package mc.gupe.ultradialogue.gui;
 
+import mc.gupe.ultradialogue.util.Tasks;
 import io.papermc.paper.dialog.Dialog;
 import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
@@ -65,7 +66,7 @@ public final class Screen {
     private static final int DIALOG_PROTOCOL = 771; // 1.21.6
 
     private final UltraDialogue pl;
-    private final Map<UUID, Session> sessions = new HashMap<>();
+    private final Map<UUID, Session> sessions = new java.util.concurrent.ConcurrentHashMap<>();
     private final AtomicLong tokens = new AtomicLong();
     private int jumps;
 
@@ -139,7 +140,7 @@ public final class Screen {
     }
 
     /** The last variant each player saw on each node: the next time a different one is picked. */
-    private final Map<UUID, Map<String, Integer>> lastVariant = new HashMap<>();
+    private final Map<UUID, Map<String, Integer>> lastVariant = new java.util.concurrent.ConcurrentHashMap<>();
 
     private String pickText(Player p, Session s, Dialogue.Node n) {
         List<Integer> ok = new ArrayList<>();
@@ -294,7 +295,10 @@ public final class Screen {
                 .action(DialogAction.customClick((view, who) -> click(who, token, leave), once))
                 .build();
         DialogType built;
-        if (!n.layout().isEmpty()) {
+        // Bedrock players see the dialogue as a Geyser form, where text in the body can't be
+        // clicked: for them the layout rows become ordinary buttons.
+        boolean rowsInBody = !n.layout().isEmpty() && !mc.gupe.ultradialogue.pack.PackManager.bedrock(p);
+        if (rowsInBody) {
             // Layout mode: answers are text rows in the body, and the nav: buttons (Back, Exit,
             // Reward... in the order they're written) are REAL buttons in a single row at the end:
             // with that many columns, Minecraft's own grid does keep them together.
@@ -310,7 +314,8 @@ public final class Screen {
         } else {
             var type = DialogType.multiAction(buttons).columns(Math.max(1, columns));
             // nav's "Exit" (or config.yml's) goes at the very bottom: the only fixed button there is.
-            if (n.navExit() || cfg().getBoolean("screen.exit-button", false)) type.exitAction(exit);
+            // (A layout node already has its nav: Exit among the buttons.)
+            if (n.layout().isEmpty() && (n.navExit() || cfg().getBoolean("screen.exit-button", false))) type.exitAction(exit);
             built = type.build();
         }
 
@@ -508,15 +513,13 @@ public final class Screen {
             p.sendActionBar(o.tooltip());
             pl.actions().sound(p, cfg().getString("screen.locked-sound", "block.note_block.bass 0.6 0.8"));
         };
-        if (Bukkit.isPrimaryThread()) r.run();
-        else Bukkit.getScheduler().runTask(pl, r);
+        Tasks.of(p, r);
     }
 
-    // Callbacks can arrive off the main thread: anything touching the world goes through here.
+    // Callbacks can arrive off the player's thread: anything touching the world goes through here.
     private void click(Audience who, long token, Dialogue.Answer a) {
         if (!(who instanceof Player p)) return;
-        if (Bukkit.isPrimaryThread()) answer(p, token, a);
-        else Bukkit.getScheduler().runTask(pl, () -> answer(p, token, a));
+        Tasks.of(p, () -> answer(p, token, a));
     }
 
     private void answer(Player p, long token, Dialogue.Answer a) {

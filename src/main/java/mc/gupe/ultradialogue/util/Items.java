@@ -1,7 +1,6 @@
 package mc.gupe.ultradialogue.util;
 
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -20,10 +19,10 @@ import java.util.Locale;
  *
  * Accepted formats (an optional amount at the end):
  *   IRON_INGOT  /  minecraft:iron_ingot       a vanilla material (only "plain" items, see below)
- *   ultraboss:AlmaFaraon                      an UltraBoss item (its hidden sb_item tag, old names included)
+ *   ultraboss:EjemploTrofeo                   an UltraBoss item (its hidden sb_item tag, old names included)
  *   ultrarevive:self | boost | end            an UltraRevive totem
  *   pdc:<namespace:key>=<value>               any other plugin's hidden tag
- *   item_model:ultraboss:alma_faraon          by its item_model component
+ *   item_model:ultraboss:ejemplotrofeo        by its item_model component
  *   name:&6Cellar Key  (nombre:)              by its display name, last resort
  *
  * A vanilla material only counts items with no hidden tag and no item_model. Otherwise "has:
@@ -165,10 +164,12 @@ public final class Items {
         // Other plugins' items are built by that plugin's own command, so they keep all their tags,
         // their name in the server's language and their texture.
         if (low.startsWith("ultraboss:")) {
-            return Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ub i give " + spec.substring(10) + " " + p.getName() + " " + amount);
+            Tasks.console("ub i give " + spec.substring(10) + " " + p.getName() + " " + amount);
+            return true;
         }
         if (low.startsWith("ultrarevive:")) {
-            return Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ur give " + spec.substring(12) + " " + p.getName() + " " + amount);
+            Tasks.console("ur give " + spec.substring(12) + " " + p.getName() + " " + amount);
+            return true;
         }
         Material mat = material(spec);
         if (mat == null) return false;

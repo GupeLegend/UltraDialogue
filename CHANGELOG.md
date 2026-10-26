@@ -1,5 +1,69 @@
 # Changelog — UltraDialogue
 
+## 1.1.4 — 2026-10-24
+
+**The button pack now travels inside your server's pack, one jar runs on 26.1 to 26.3, and Bedrock
+players can use every dialogue.** Dialogue files don't change.
+
+### The pack goes into your server's pack
+
+- UltraDialogue **no longer sends a resource pack** or opens a port (8083 is free again). On startup,
+  before the other plugins start, it puts the button pack inside the plugin that builds your server's
+  pack, so players get a single pack: **ResourcePackManager, Nexo, Oraxen, ItemsAdder, CraftEngine or
+  EcoItems** (the first one installed, in that order). The buttons are in that pack on the same boot.
+  ItemsAdder and CraftEngine only build their pack on command, so once the server is up the plugin runs
+  `/iazip` or `/ce reload pack` — only when the buttons changed.
+- `resource-pack.enabled` is gone. Configs from 1.1.2 still have `enabled: false` (it meant "don't
+  send the pack yourself") and it's ignored, so the pack still gets installed. To turn the install off,
+  use `install: none`.
+- **No pack plugin?** The pack is left in `plugins/UltraDialogue/resourcepack/` with a README explaining
+  how to load it, and the console shows a WARNING. After adding it to your own pack, set
+  `resource-pack.merged-by-hand: true`.
+- `buttons: auto` now means: drawn for players whose last server pack loaded fine, `[ text ]` for
+  anyone who declined it or failed to download it.
+- `config.yml`: new `resource-pack.install` (`auto`, `none` or one plugin's name) and
+  `merged-by-hand`. Gone: `mode`, `host`, `port`, `url`, `force` and `prompt`, and the `pack-prompt`
+  language line. Old keys left in a server's config are simply ignored.
+- Tested with EcoItems, ResourcePackManager, CraftEngine and with none. Nexo, Oraxen and ItemsAdder follow
+  their official documentation but couldn't be tested (paid plugins).
+
+### Fixes
+
+- **Drawn buttons showed as boxes (□□□) on 26.3.** Two textures of the button font were named `L.png` and
+  `R.png`; Minecraft 26.3 rejects capital letters in resource paths and dropped the whole font. They're
+  now `l.png` and `r.png`. Found with a real 26.3 client.
+- Pack plugins that send the pack while the player is still connecting (CraftEngine) report nothing to
+  other plugins, so those players always got `[ text ]`. With CraftEngine, a player now counts as having
+  the buttons unless they decline the pack later.
+- The `/ud` editor showed colour codes (`&7`, `&8`) in the descriptions of nodes and buttons instead of
+  painting them. The lines come from the language file, so they're now read as coloured text.
+
+### Bedrock
+
+- Geyser shows dialogues as Bedrock forms. Bedrock players (detected through **Floodgate**, optional)
+  always get the text buttons: Bedrock can't draw the pack's font, even if Geyser reports the Java pack
+  as loaded.
+- On a node with `layout:`, Bedrock players get the rows as **normal buttons**: text in a form can't be
+  clicked, so before they couldn't answer at all.
+
+### Paper, Purpur and Folia
+
+- Runs on **Paper, Purpur and Folia** (`folia-supported: true`). Clicks, editor steps and console
+  commands that touch a player now run on that player's own thread (on Folia, their region), and
+  console commands from dialogue actions run on the global thread.
+- On Folia, `/ud flags` and `/ud affinity` answer a moment later, from the player's thread. From RCON
+  that reply is lost because the connection is already closed; in game or in the console it shows.
+
+### 26.1 to 26.3
+
+- One jar for **Paper 26.1, 26.2 and 26.3**: built against 26.1.2 with `api-version: '26.1'`. Tested on
+  all three with a bot that reads and clicks the dialogues, 21 of 21 on each: first-time greeting and
+  flags, going back, locked answers and affinity, free rows, `nav:` actions, opening another dialogue,
+  permissions, closing, `/ud reload` and `/ud list`. Also checked: drawn buttons for a player who loaded
+  the server's pack, `[ text ]` for one who declined it, and the drawn buttons with a real 26.3 client
+  through CraftEngine.
+- `website` in `plugin.yml` now points to the UltraWiki.
+
 ## 1.1.3 — 2026-10-15
 
 **A button editor in `/ud`, a much smaller resource pack, and a cleaner, reorganised codebase.**

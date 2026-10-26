@@ -1,5 +1,6 @@
 package mc.gupe.ultradialogue.command;
 
+import mc.gupe.ultradialogue.util.Tasks;
 import mc.gupe.ultradialogue.UltraDialogue;
 import mc.gupe.ultradialogue.model.Dialogue;
 import mc.gupe.ultradialogue.util.Flags;
@@ -56,7 +57,8 @@ public final class Command implements TabExecutor {
                     return true;
                 }
                 // Opened by hand there is no NPC: no distance check, no skin ("npc" = its fallback).
-                pl.screen().open(p, d, node, null, null);
+                // On the player's thread: on Folia they may be in another region than the console.
+                Tasks.of(p, () -> pl.screen().open(p, d, node, null, null));
             }
             case "reload", "recargar" -> {
                 int n = pl.reload();
@@ -75,41 +77,46 @@ public final class Command implements TabExecutor {
                 if (a.length < 2) { help(s, l); return true; }
                 Player p = Bukkit.getPlayerExact(a[1]);
                 if (p == null) { s.sendMessage(Text.msg("player-offline")); return true; }
-                if (a.length > 2 && (a[2].equalsIgnoreCase("clear") || a[2].equalsIgnoreCase("borrar"))) {
-                    if (a.length > 3) Flags.set(p, a[3], false); else Flags.clear(p);
-                    s.sendMessage(Text.msg("done"));
-                }
-                Set<String> f = Flags.of(p);
-                s.sendMessage(Text.msg("flags", "{player}", p.getName(),
-                        "{flags}", f.isEmpty() ? pl.lang().raw("none") : String.join(", ", f)));
+                boolean clear = a.length > 2 && (a[2].equalsIgnoreCase("clear") || a[2].equalsIgnoreCase("borrar"));
+                String one = clear && a.length > 3 ? a[3] : null;
+                Tasks.of(p, () -> {
+                    if (clear) {
+                        if (one != null) Flags.set(p, one, false); else Flags.clear(p);
+                        s.sendMessage(Text.msg("done"));
+                    }
+                    Set<String> f = Flags.of(p);
+                    s.sendMessage(Text.msg("flags", "{player}", p.getName(),
+                            "{flags}", f.isEmpty() ? pl.lang().raw("none") : String.join(", ", f)));
+                });
             }
             case "affinity", "afinidad" -> {
                 if (a.length < 2) { help(s, l); return true; }
                 Player p = Bukkit.getPlayerExact(a[1]);
                 if (p == null) { s.sendMessage(Text.msg("player-offline")); return true; }
                 if (a.length == 2) {
-                    var all = Affinity.all(p);
-                    s.sendMessage(Text.msg("affinity-list", "{player}", p.getName(),
-                            "{list}", all.isEmpty() ? pl.lang().raw("none") : all.toString().replaceAll("[{}]", "")));
+                    Tasks.of(p, () -> {
+                        var all = Affinity.all(p);
+                        s.sendMessage(Text.msg("affinity-list", "{player}", p.getName(),
+                                "{list}", all.isEmpty() ? pl.lang().raw("none") : all.toString().replaceAll("[{}]", "")));
+                    });
                     return true;
                 }
                 String id = a[2].toLowerCase();
-                if (a.length >= 4) {
-                    String op = a[3].toLowerCase();
-                    int n = 0;
-                    if (!op.equals("reset")) {
-                        try { n = Integer.parseInt(a.length > 4 ? a[4] : "x"); }
-                        catch (NumberFormatException e) { help(s, l); return true; }
-                    }
+                String op = a.length >= 4 ? a[3].toLowerCase() : "show";
+                int n;
+                try { n = op.equals("set") || op.equals("add") ? Integer.parseInt(a.length > 4 ? a[4] : "x") : 0; }
+                catch (NumberFormatException e) { help(s, l); return true; }
+                if (!op.equals("show") && !op.equals("set") && !op.equals("add") && !op.equals("reset")) { help(s, l); return true; }
+                Tasks.of(p, () -> {
                     switch (op) {
                         case "set" -> Affinity.set(p, id, n);
                         case "add" -> Affinity.change(p, id, n, null);   // no brakes: this is staff
                         case "reset" -> Affinity.reset(p, id);
-                        default -> { help(s, l); return true; }
+                        default -> { }
                     }
-                }
-                s.sendMessage(Text.msg("affinity-show", "{player}", p.getName(), "{id}", id,
-                        "{value}", String.valueOf(Affinity.get(p, id))));
+                    s.sendMessage(Text.msg("affinity-show", "{player}", p.getName(), "{id}", id,
+                            "{value}", String.valueOf(Affinity.get(p, id))));
+                });
             }
             case "icons", "iconos" -> {
                 Player viewer = s instanceof Player pp ? pp : null;

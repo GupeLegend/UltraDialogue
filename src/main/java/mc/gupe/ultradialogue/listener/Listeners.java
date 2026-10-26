@@ -13,7 +13,6 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,7 +23,7 @@ import java.util.UUID;
  */
 public final class Listeners implements Listener {
 
-    private static final Map<UUID, Long> lastClick = new HashMap<>();
+    private static final Map<UUID, Long> lastClick = new java.util.concurrent.ConcurrentHashMap<>();
     private final UltraDialogue pl;
 
     public Listeners(UltraDialogue pl) { this.pl = pl; }
